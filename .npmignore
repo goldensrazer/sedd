@@ -1,0 +1,29 @@
+# Landing page
+page/
+
+# SEDD internal (usado só no dev deste projeto)
+.sedd/
+.claude/
+
+# Development
+src/
+*.ts
+tsconfig.json
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# Tests
+tests/
+*.test.js
+*.spec.js
+
+# Misc
+*.log
+.DS_Store
+node_modules/

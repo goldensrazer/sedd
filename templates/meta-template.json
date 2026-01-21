@@ -1,0 +1,12 @@
+{
+  "featureId": "{{FEATURE_ID}}",
+  "featureName": "{{FEATURE_NAME}}",
+  "branch": "{{BRANCH_NAME}}",
+  "createdAt": "{{TIMESTAMP}}",
+  "specCreatedAt": "{{TIMESTAMP}}",
+  "currentMigration": null,
+  "migrations": {},
+  "splits": [],
+  "commits": [],
+  "expectation": null
+}

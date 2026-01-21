@@ -1,0 +1,61 @@
+{
+  "name": "sedd",
+  "version": "0.1.6",
+  "description": "SEDD - Spec & Expectation Driven Development. A phase-based specification workflow for AI-assisted development.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "sedd": "bin/sedd.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "templates",
+    "commands",
+    "scripts",
+    "hooks",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "specification",
+    "driven-development",
+    "ai-coding",
+    "claude",
+    "cursor",
+    "copilot",
+    "llm",
+    "workflow",
+    "cli"
+  ],
+  "author": "Kelvin R.C",
+  "license": "MIT",
+  "homepage": "https://github.com/goldensrazer/sedd#readme",
+  "bugs": {
+    "url": "https://github.com/goldensrazer/sedd/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/goldensrazer/sedd.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "glob": "^10.3.10",
+    "inquirer": "^9.2.12"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^9.0.7",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.5.0"
+  }
+}

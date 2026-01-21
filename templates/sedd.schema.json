@@ -1,0 +1,95 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sedd.dev/sedd.schema.json",
+  "title": "SEDD Configuration",
+  "description": "Configuration file for SEDD (Spec & Expectation Driven Development)",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference"
+    },
+    "specsDir": {
+      "type": "string",
+      "default": ".sedd",
+      "description": "Directory for storing feature specifications. Default: '.sedd', use 'specs' for legacy projects."
+    },
+    "branchPattern": {
+      "type": "string",
+      "default": "{{id}}-{{name}}",
+      "description": "Pattern for feature branch names. Variables: {{id}}, {{name}}"
+    },
+    "autoSplit": {
+      "type": "object",
+      "description": "Auto-split configuration for large files",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable automatic file splitting"
+        },
+        "maxLines": {
+          "type": "integer",
+          "default": 400,
+          "minimum": 100,
+          "maximum": 1000,
+          "description": "Maximum lines before auto-split triggers"
+        }
+      },
+      "additionalProperties": false
+    },
+    "hooks": {
+      "type": "object",
+      "description": "Hook behavior configuration",
+      "properties": {
+        "assertive": {
+          "type": "boolean",
+          "default": true,
+          "description": "Force skill activation (true) or just suggest (false)"
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": ["langchain-expert", "architecture-mapper", "defect-analyzer"],
+          "description": "Skills to activate based on prompt keywords"
+        },
+        "checkOnlyCurrentMigration": {
+          "type": "boolean",
+          "default": true,
+          "description": "Only check current migration, not historical migrations"
+        },
+        "showSyncWarnings": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show warnings when task files are out of sync"
+        },
+        "blockOnSyncError": {
+          "type": "boolean",
+          "default": false,
+          "description": "Block Claude from stopping if files are out of sync (optional, disabled by default)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "commit": {
+      "type": "object",
+      "description": "Git commit configuration",
+      "properties": {
+        "askBeforeCommit": {
+          "type": "boolean",
+          "default": true,
+          "description": "Ask user confirmation before committing"
+        },
+        "messagePattern": {
+          "type": "string",
+          "default": "{{type}}({{id}}): {{message}}",
+          "description": "Commit message pattern. Variables: {{type}}, {{id}}, {{message}}"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
