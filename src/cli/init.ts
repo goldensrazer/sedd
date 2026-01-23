@@ -241,17 +241,20 @@ export async function init(projectName?: string, options: InitOptions = {}): Pro
 
     // Default entries to ignore
     const seddIgnoreEntries = [
-      '# SEDD - Generated files',
+      '# SEDD',
       '.sedd/cache/',
       '.sedd/scripts/',
       '.sedd/templates/',
       '',
+      '# SEDD config (uncomment to ignore)',
+      '# sedd.config.json',
+      '',
+      '# Uncomment to ignore entire SEDD directory',
+      '# .sedd/',
+      '',
       '# Claude Code hooks output',
       '.claude/hooks/*.log',
       '.claude/hooks/*.tmp',
-      '',
-      '# SEDD config (optional - uncomment to ignore)',
-      '# sedd.config.json',
     ];
 
     if (existsSync(gitignorePath)) {

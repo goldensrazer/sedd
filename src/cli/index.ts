@@ -20,6 +20,8 @@ import { specify } from './specify.js';
 import { clarify } from './clarify.js';
 import { addTasks, completeTask } from './tasks.js';
 import { update } from './update.js';
+import { estimate } from './estimate.js';
+import { validate } from './validate.js';
 import { checkForUpdates, showUpdateNotification, getInstalledVersion } from './version-check.js';
 
 const SEDD_DIR = '.sedd';
@@ -207,6 +209,23 @@ async function main(): Promise<void> {
     .option('-f, --force', 'Skip confirmation prompt')
     .option('-b, --backup', 'Create backup before updating')
     .action(update);
+
+  program
+    .command('estimate')
+    .description('Generate effort estimation for current feature')
+    .option('-p, --path <path>', 'File path to investigate')
+    .option('-d, --description <desc>', 'Feature description to estimate')
+    .option('-j, --json', 'Output as JSON')
+    .action(estimate);
+
+  program
+    .command('validate')
+    .description('Validate implementation against expectation')
+    .option('-m, --migration <id>', 'Specific migration ID to validate')
+    .option('-a, --auto', 'Auto-create tasks for gaps')
+    .option('--full-diff', 'Show full git diff')
+    .option('-j, --json', 'Output as JSON')
+    .action(validate);
 
   // No arguments - show welcome
   if (args.length === 0) {

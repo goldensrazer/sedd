@@ -18,6 +18,19 @@
 
 ---
 
+## Para que serve o SEDD?
+
+SEDD é ideal para:
+
+| Caso de Uso | Descrição |
+|-------------|-----------|
+| **Features** | Novas funcionalidades com requisitos claros |
+| **Projetos** | Projetos completos com múltiplas entregas |
+| **Investigação** | Análise de código existente com estimativas |
+| **Melhorias** | Refatorações e otimizações planejadas |
+
+---
+
 ## Quick Start
 
 ```bash
@@ -179,6 +192,123 @@ Criar migration de follow-up? [Y/n]
 | `/sedd.implement` | Executar tasks com checkpoints |
 | `/sedd.implement --all` | Executar tudo sem parar |
 | `/sedd.dashboard` | Ver status atual de migrations e tasks |
+| `/sedd.estimate` | Estimar prazo e complexidade antes de começar |
+| `/sedd.validate` | Validar implementação contra expectativa |
+
+---
+
+## Fluxo Completo de Uso
+
+O SEDD funciona em um ciclo de 4 etapas principais:
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  ESTIMATE   │────▶│   SPECIFY   │────▶│   CLARIFY   │────▶│  IMPLEMENT  │
+│  (Opcional) │     │             │     │             │     │             │
+└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+       │                                       │                   │
+       │                                       ▼                   ▼
+       │                              ┌─────────────┐     ┌─────────────┐
+       └──────────────────────────────│   CLARIFY   │◀────│  VALIDATE   │
+                                      │  (repeat)   │     │  (ao final) │
+                                      └─────────────┘     └─────────────┘
+```
+
+### 1. `/sedd.estimate` (Opcional - Antes de Começar)
+
+Analisa o projeto e gera estimativa de prazo:
+
+```
+📊 ESTIMATIVA
+
+Total:      16h
+Humano:     4h (25%)  ← Decisões, revisão, edge cases
+AI:         12h (75%) ← Boilerplate, implementação
+Complexidade: M (Medium)
+```
+
+### 2. `/sedd.specify` - Criar Especificação
+
+Cria a estrutura inicial da feature com:
+- spec.md (especificação)
+- interfaces.ts (tipos TypeScript)
+- ui-mockups/ (se for UI)
+
+### 3. `/sedd.clarify` - Clarificar e Gerar Tasks
+
+Este é o comando mais importante. Ele usa um **modo de discussão flexível**:
+
+```
+📝 Clarification Session - Migration 001
+
+Você pode explicar livremente o que precisa.
+Eu vou anotar tudo e fazer perguntas quando necessário.
+
+Comandos disponíveis:
+  continue  → Continuar explicando
+  pergunte  → AI faz próxima pergunta
+  tasks     → Gerar tasks e finalizar
+```
+
+#### Comandos Inline do Clarify
+
+| Comando | O que faz | Quando usar |
+|---------|-----------|-------------|
+| `continue` | Permite continuar explicando | Quando você tem mais contexto para adicionar |
+| `pergunte` | AI faz uma pergunta de clarificação | Quando quer que a AI identifique gaps |
+| `tasks` | Gera tasks.md e finaliza | Quando terminou de explicar tudo |
+
+**Exemplo de sessão:**
+
+```
+Você: Preciso de um toggle de dark mode que persista
+
+AI: ✓ Anotado. Comandos: continue | pergunte | tasks
+
+Você: continue
+
+AI: Ok, continue explicando...
+
+Você: Deve ficar na página de settings, não no header
+
+AI: ✓ Anotado: Toggle em settings, não no header
+
+Você: pergunte
+
+AI: Q1: Como deve ser a persistência?
+    A) localStorage (mais simples)
+    B) Banco de dados (sincroniza entre dispositivos)
+    C) Cookie (SSR-friendly)
+
+Você: B, banco de dados
+
+AI: ✓ Decisão registrada: Persistência no banco
+
+Você: tasks
+
+AI: ✅ Gerando 5 tasks...
+    📊 Coverage: 92% 🟢
+```
+
+### 4. `/sedd.implement` - Executar Tasks
+
+Executa as tasks geradas, com validação contra expectativa.
+
+### 5. `/sedd.validate` - Validar ao Final
+
+Após implementar, valida se a expectativa foi atendida:
+
+```
+🔍 VALIDAÇÃO
+
+Cobertura:    75% ████████████░░░░
+Tasks:        3/4 completadas
+Arquivos:     5 alterados (+180, -12)
+Gaps:         1 encontrado
+
+⚠️ Gap: "sessions" não coberto
+   Criar task de follow-up? [Y/n]
+```
 
 ---
 
