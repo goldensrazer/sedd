@@ -1,5 +1,5 @@
 import { execSync, execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, statSync, unlinkSync } from 'node:fs';
 import { join, extname } from 'node:path';
 import type {
   GitHubIssueInfo,
@@ -483,6 +483,13 @@ export class GitHubOperations {
       mkdirSync(assetsDir, { recursive: true });
     }
 
+    let ghToken = '';
+    try {
+      ghToken = execSync('gh auth token', { cwd: this.cwd, encoding: 'utf-8', stdio: 'pipe' }).trim();
+    } catch {
+      // No token available, will try unauthenticated
+    }
+
     let downloaded = 0;
     let result = body;
 
@@ -494,7 +501,9 @@ export class GitHubOperations {
       const filepath = join(assetsDir, filename);
 
       try {
-        execSync(`curl -sL "${url}" -o "${filepath}"`, {
+        const needsAuth = url.includes('github.com') && ghToken;
+        const authHeader = needsAuth ? `-H "Authorization: token ${ghToken}"` : '';
+        execSync(`curl -sL ${authHeader} "${url}" -o "${filepath}"`, {
           cwd: this.cwd,
           encoding: 'utf-8',
           stdio: 'pipe',
@@ -502,8 +511,13 @@ export class GitHubOperations {
         });
 
         if (existsSync(filepath)) {
-          result = result.replace(full, `![${alt}](./assets/${filename})`);
-          downloaded++;
+          const size = statSync(filepath).size;
+          if (size > 100) {
+            result = result.replace(full, `![${alt}](./assets/${filename})`);
+            downloaded++;
+          } else {
+            unlinkSync(filepath);
+          }
         }
       } catch {
         // Keep original link on failure
