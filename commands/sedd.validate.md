@@ -285,11 +285,17 @@ Próximo passo: Reverter alterações que violam restrições.
 
 ### Step 8: Create Follow-up Tasks (if gaps)
 
-If gaps found and `--auto` flag or user confirms:
+If gaps found and `--auto` flag or user confirms, **use the CLI to add tasks**:
 
+```bash
+sedd tasks '[{"story":"Follow-up","description":"Implement session persistence for theme"},{"story":"Follow-up","description":"Add session storage fallback"}]'
+```
+
+This automatically creates GitHub issues for the follow-up tasks and updates _meta.json.
+**Do NOT manually append to tasks.md** — use the CLI.
+
+The CLI will add to tasks.md:
 ```markdown
-# New tasks added to tasks.md
-
 - [ ] T001-NEW-001 [Follow-up] Implement session persistence for theme
 - [ ] T001-NEW-002 [Follow-up] Add session storage fallback
 ```

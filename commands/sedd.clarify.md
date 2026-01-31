@@ -316,7 +316,20 @@ Ao gerar tasks, VARRER clarify.md por TODOS os `[TASK_SOURCE:*]` tags:
 - Cada tag com tipo `edge-case` → task de validacao/protecao
 - Cada tag com tipo `constraint` → task de teste negativo
 
-Based on all decisions and TASK_SOURCE tags, create tasks:
+Based on all decisions and TASK_SOURCE tags, **use the CLI to add tasks**:
+
+```bash
+sedd tasks '[{"story":"Foundation","description":"Create ThemeContext in src/contexts/ThemeContext.tsx"},{"story":"Foundation","description":"Add theme column to users table prisma/schema.prisma"},{"story":"US1","description":"Create ThemeToggle component src/components/ThemeToggle.tsx"},{"story":"US1","description":"Add toggle to settings page src/pages/settings.tsx"},{"story":"US1","description":"Implement theme API endpoint src/api/user/theme.ts"}]'
+```
+
+This automatically:
+- Appends tasks to `tasks.md` with correct IDs (T001-001, T001-002...)
+- Updates `_meta.json` (tasksTotal, status → in-progress)
+- Creates GitHub issues for each task (if GitHub integration is configured)
+
+**Do NOT manually write tasks.md** — the CLI handles file creation and GitHub sync.
+
+The CLI generates `tasks.md` with this structure:
 
 ```markdown
 # Tasks - Migration 001
@@ -335,7 +348,11 @@ Total: 5 | Completed: 0 | Pending: 5
 - [ ] T001-003 [US1] Create ThemeToggle component `src/components/ThemeToggle.tsx`
 - [ ] T001-004 [US1] Add toggle to settings page `src/pages/settings.tsx`
 - [ ] T001-005 [US1] Implement theme API endpoint `src/api/user/theme.ts`
+```
 
+After adding tasks via CLI, manually add the `## Dependencies` section to tasks.md:
+
+```markdown
 ## Dependencies
 
 T001-001, T001-002 → T001-003 → T001-004

@@ -114,28 +114,26 @@ For each task in order:
 
 3. **Execute the task**
 
-4. **Update ALL task files** (CRITICAL - keep them in sync):
+4. **Mark task as completed using CLI** (CRITICAL - syncs with GitHub automatically):
 
-   a. **Update tasks.md** in migration folder - change `[ ]` to `[x]`:
-   ```markdown
-   # Before
-   - [ ] T001-001 [Foundation] Create ThemeContext
-
-   # After
-   - [x] T001-001 [Foundation] Create ThemeContext
+   ```bash
+   sedd complete T001-001
    ```
 
-   b. **Update progress.md** - mark completed with timestamp:
+   This automatically:
+   - Updates `tasks.md` (`[ ]` → `[x]`)
+   - Increments `tasksCompleted` in `_meta.json`
+   - If GitHub integration is configured:
+     - Moves the issue to "Done" on the project board
+     - Comments on the issue with progress
+     - When all tasks complete: closes the source issue
+
+   After running `sedd complete`, also update **progress.md** manually:
    ```markdown
    - [x] T001-001 [10:30 → 10:45] Create ThemeContext
    ```
 
-   c. **Update _meta.json** - increment tasksCompleted:
-   ```json
-   "tasksCompleted": 1
-   ```
-
-5. **Verify sync** - All three files must show same completed count
+5. **Verify sync** - tasks.md, _meta.json and progress.md must show same completed count
 
 ### Step 5.6: Validate Against Expectations (CRITICAL - Before Marking Done)
 
@@ -610,10 +608,8 @@ Stops after migration 002.
 
 ## Rules
 
-- **CRITICAL: Update ALL 3 files when completing a task:**
-  1. `{migration}/tasks.md` - change `[ ]` to `[x]`
-  2. `progress.md` - mark task with `[x]` and timestamps
-  3. `_meta.json` - increment tasksCompleted count
+- **CRITICAL: Use `sedd complete <task-id>` to mark tasks done** (syncs tasks.md, _meta.json, and GitHub automatically)
+  - Then manually update `progress.md` with timestamps
 - ONE task in-progress at a time
 - **With `--all` flag:** NO prompts between migrations, commit only at end
 - **Without flag:** Ask about commit after each migration completes
@@ -623,11 +619,12 @@ Stops after migration 002.
 
 ## File Sync Checklist
 
-After completing each task, verify:
+After running `sedd complete T001-001`, verify:
 ```
-✓ tasks.md      → - [x] T001-001 ...
-✓ progress.md   → - [x] T001-001 [time] ...
-✓ _meta.json    → "tasksCompleted": N
+✓ tasks.md      → - [x] T001-001 ...  (auto by sedd complete)
+✓ _meta.json    → "tasksCompleted": N  (auto by sedd complete)
+✓ progress.md   → - [x] T001-001 [time] ...  (manual update)
+✓ GitHub issue   → moved to Done column  (auto if configured)
 ```
 
 If files are out of sync, fix immediately before continuing.
