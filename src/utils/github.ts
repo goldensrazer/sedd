@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join, extname } from 'node:path';
 import type {
@@ -27,6 +27,19 @@ export class GitHubOperations {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Execute a GraphQL query using execFileSync to avoid shell quoting issues on Windows.
+   * Values must be inlined in the query string (no $variables).
+   */
+  private execGraphQL(query: string): any {
+    const result = execFileSync('gh', ['api', 'graphql', '-f', `query=${query.replace(/\n/g, ' ')}`], {
+      cwd: this.cwd,
+      encoding: 'utf-8',
+      stdio: 'pipe',
+    });
+    return JSON.parse((result as string).trim());
   }
 
   /**
@@ -96,10 +109,7 @@ export class GitHubOperations {
   listUserOrganizations(): GitHubOrganization[] {
     try {
       const query = `query { viewer { login organizations(first: 50) { nodes { login name } } } }`;
-      const output = this.exec(
-        `gh api graphql -f query='${query}'`
-      );
-      const data = JSON.parse(output);
+      const data = this.execGraphQL(query);
       const nodes: { login: string; name?: string }[] = data?.data?.viewer?.organizations?.nodes || [];
       return nodes.map((o) => ({ login: o.login, name: o.name || o.login }));
     } catch {
@@ -120,25 +130,25 @@ export class GitHubOperations {
     }
   }
 
+  private escapeGql(val: string): string {
+    return val.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  }
+
   /**
    * List projects for an owner (user or org)
    */
   listProjects(owner: string): GitHubProjectInfo[] {
     try {
-      const query = `query($owner: String!, $first: Int!) {
-        user(login: $owner) {
-          projectsV2(first: $first) {
+      const query = `query {
+        user(login: "${this.escapeGql(owner)}") {
+          projectsV2(first: 20) {
             nodes { id number title }
           }
         }
       }`;
-      const output = this.exec(
-        `gh api graphql -f query='${query.replace(/\n/g, ' ')}' -F owner="${owner}" -F first=20`
-      );
-      const data = JSON.parse(output);
+      const data = this.execGraphQL(query);
       const nodes = data?.data?.user?.projectsV2?.nodes;
       if (!nodes) {
-        // Try as org
         return this.listOrgProjects(owner);
       }
       return nodes.map((n: any) => ({
@@ -153,17 +163,14 @@ export class GitHubOperations {
 
   private listOrgProjects(owner: string): GitHubProjectInfo[] {
     try {
-      const query = `query($owner: String!, $first: Int!) {
-        organization(login: $owner) {
-          projectsV2(first: $first) {
+      const query = `query {
+        organization(login: "${this.escapeGql(owner)}") {
+          projectsV2(first: 20) {
             nodes { id number title }
           }
         }
       }`;
-      const output = this.exec(
-        `gh api graphql -f query='${query.replace(/\n/g, ' ')}' -F owner="${owner}" -F first=20`
-      );
-      const data = JSON.parse(output);
+      const data = this.execGraphQL(query);
       const nodes = data?.data?.organization?.projectsV2?.nodes;
       if (!nodes) return [];
       return nodes.map((n: any) => ({
@@ -181,8 +188,8 @@ export class GitHubOperations {
    */
   getProjectFields(projectId: string): GitHubFieldInfo[] {
     try {
-      const query = `query($projectId: ID!) {
-        node(id: $projectId) {
+      const query = `query {
+        node(id: "${this.escapeGql(projectId)}") {
           ... on ProjectV2 {
             fields(first: 50) {
               nodes {
@@ -197,10 +204,7 @@ export class GitHubOperations {
           }
         }
       }`;
-      const output = this.exec(
-        `gh api graphql -f query='${query.replace(/\n/g, ' ')}' -F projectId="${projectId}"`
-      );
-      const data = JSON.parse(output);
+      const data = this.execGraphQL(query);
       const nodes = data?.data?.node?.fields?.nodes;
       if (!nodes) return [];
       return nodes.map((n: any) => ({
@@ -226,10 +230,10 @@ export class GitHubOperations {
    */
   listProjectItems(owner: string, projectNumber: number): GitHubProjectItem[] {
     try {
-      const query = `query($owner: String!, $number: Int!, $first: Int!) {
-        user(login: $owner) {
-          projectV2(number: $number) {
-            items(first: $first) {
+      const query = `query {
+        user(login: "${this.escapeGql(owner)}") {
+          projectV2(number: ${projectNumber}) {
+            items(first: 100) {
               nodes {
                 id
                 fieldValueByName(name: "Status") {
@@ -244,10 +248,7 @@ export class GitHubOperations {
           }
         }
       }`;
-      const output = this.exec(
-        `gh api graphql -f query='${query.replace(/\n/g, ' ')}' -F owner="${owner}" -F number=${projectNumber} -F first=100`
-      );
-      const data = JSON.parse(output);
+      const data = this.execGraphQL(query);
       let nodes = data?.data?.user?.projectV2?.items?.nodes;
       if (!nodes) {
         nodes = this.listOrgProjectItems(owner, projectNumber);
@@ -267,10 +268,10 @@ export class GitHubOperations {
 
   private listOrgProjectItems(owner: string, projectNumber: number): any[] | null {
     try {
-      const query = `query($owner: String!, $number: Int!, $first: Int!) {
-        organization(login: $owner) {
-          projectV2(number: $number) {
-            items(first: $first) {
+      const query = `query {
+        organization(login: "${this.escapeGql(owner)}") {
+          projectV2(number: ${projectNumber}) {
+            items(first: 100) {
               nodes {
                 id
                 fieldValueByName(name: "Status") {
@@ -285,10 +286,7 @@ export class GitHubOperations {
           }
         }
       }`;
-      const output = this.exec(
-        `gh api graphql -f query='${query.replace(/\n/g, ' ')}' -F owner="${owner}" -F number=${projectNumber} -F first=100`
-      );
-      const data = JSON.parse(output);
+      const data = this.execGraphQL(query);
       return data?.data?.organization?.projectV2?.items?.nodes || null;
     } catch {
       return null;
@@ -325,19 +323,15 @@ export class GitHubOperations {
    */
   addIssueToProject(projectId: string, issueUrl: string): string | null {
     try {
-      const query = `mutation($projectId: ID!, $contentId: ID!) {
-        addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
-          item { id }
-        }
-      }`;
-      // First get the issue node ID from the URL
       const issueNodeId = this.getIssueNodeId(issueUrl);
       if (!issueNodeId) return null;
 
-      const output = this.exec(
-        `gh api graphql -f query='${query.replace(/\n/g, ' ')}' -F projectId="${projectId}" -F contentId="${issueNodeId}"`
-      );
-      const data = JSON.parse(output);
+      const query = `mutation {
+        addProjectV2ItemById(input: { projectId: "${this.escapeGql(projectId)}", contentId: "${this.escapeGql(issueNodeId)}" }) {
+          item { id }
+        }
+      }`;
+      const data = this.execGraphQL(query);
       return data?.data?.addProjectV2ItemById?.item?.id || null;
     } catch {
       return null;
@@ -364,19 +358,17 @@ export class GitHubOperations {
    */
   moveItem(projectId: string, itemId: string, statusFieldId: string, optionId: string): boolean {
     try {
-      const query = `mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+      const query = `mutation {
         updateProjectV2ItemFieldValue(input: {
-          projectId: $projectId
-          itemId: $itemId
-          fieldId: $fieldId
-          value: { singleSelectOptionId: $optionId }
+          projectId: "${this.escapeGql(projectId)}"
+          itemId: "${this.escapeGql(itemId)}"
+          fieldId: "${this.escapeGql(statusFieldId)}"
+          value: { singleSelectOptionId: "${this.escapeGql(optionId)}" }
         }) {
           projectV2Item { id }
         }
       }`;
-      this.exec(
-        `gh api graphql -f query='${query.replace(/\n/g, ' ')}' -F projectId="${projectId}" -F itemId="${itemId}" -F fieldId="${statusFieldId}" -F optionId="${optionId}"`
-      );
+      this.execGraphQL(query);
       return true;
     } catch {
       return false;
