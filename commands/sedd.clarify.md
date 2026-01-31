@@ -635,6 +635,9 @@ For automated workflows, use the SEDD CLI:
 # Create new migration (creates clarify.md, tasks.md, decisions.md)
 sedd clarify
 
+# Create migration pre-populated from a GitHub issue
+sedd clarify --from-issue https://github.com/owner/repo/issues/42
+
 # Add tasks to current migration
 sedd tasks '[{"story":"US1","description":"Task description"}]'
 
@@ -644,5 +647,25 @@ sedd complete T001-001
 # Check status
 sedd status
 ```
+
+**Options:**
+- `--from-issue <url>` - Pre-populate clarify.md with context from a GitHub issue
+
+### --from-issue Flow
+
+When `--from-issue` is provided:
+
+1. Fetches issue title and body from GitHub
+2. **Downloads images** from the issue body to `{migration}/assets/` and rewrites links to relative paths (e.g. `./assets/image-001.png`), so the AI can see the visual content via Read tool
+3. Pre-populates `clarify.md` with:
+   - `## Context (from GitHub Issue #N)` containing the issue body (with local image paths)
+   - `## Expected Outcome` set to the issue title
+4. Links migration to the issue in `.github-sync.json`
+5. Comments on the issue: "SEDD migration {id} started from this issue"
+
+Supported image formats: `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg`, and any `github.com/user-attachments` URL.
+If a download fails, the original URL link is kept.
+
+**Requires:** `gh` CLI installed and authenticated. GitHub integration (`sedd github setup`) needed for board/comment features.
 
 Scripts also available in `.sedd/scripts/powershell/` and `.sedd/scripts/bash/`.

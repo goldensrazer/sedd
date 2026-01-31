@@ -3,6 +3,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import { checkForUpdates, showUpdateNotification, getInstalledVersion } from './version-check.js';
+import { loadConfig } from '../types/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = join(__dirname, '../../templates');
@@ -451,6 +452,25 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
   console.log(chalk.gray('  meta.exp = _meta.json tem campo expectation'));
   console.log(chalk.gray('  spec.exp = spec.md tem seção ## Expectation'));
   console.log(chalk.gray('  AC = acceptance.md\n'));
+
+  // GitHub Integration status
+  try {
+    const config = loadConfig(cwd);
+    const gh = config.github;
+    if (gh?.project) {
+      const proj = gh.project;
+      console.log(chalk.bold('GitHub Integration:'));
+      console.log(chalk.gray(`  Engine: ${gh.engine || 'both'}`));
+      console.log(chalk.gray(`  Project: ${proj.title} (#${proj.projectNumber})`));
+      console.log(chalk.green('  ✓ Connected\n'));
+    } else {
+      console.log(chalk.gray('GitHub Integration: not configured'));
+      console.log(chalk.gray('  Run "sedd github setup" to enable.\n'));
+    }
+  } catch {
+    console.log(chalk.gray('GitHub Integration: not configured'));
+    console.log(chalk.gray('  Run "sedd github setup" to enable.\n'));
+  }
 
   if (needsMigration > 0) {
     console.log(chalk.yellow(`⚠️  ${needsMigration} feature(s) sem expectation definida\n`));

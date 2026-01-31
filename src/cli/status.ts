@@ -1,8 +1,9 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import chalk from 'chalk';
 import { GitOperations } from '../utils/git.js';
 import { MigrationManager } from '../core/migration-manager.js';
+import { BoardManager } from '../core/board-manager.js';
 import { loadConfig } from '../types/index.js';
 
 interface StatusOptions {
@@ -129,6 +130,39 @@ export async function status(options: StatusOptions = {}): Promise<void> {
     for (const commit of recentCommits) {
       console.log(chalk.gray(`  ${commit.hash}`), commit.message);
     }
+    console.log();
+  }
+
+  // Show board summary
+  const bm = new BoardManager(config, cwd);
+  const boardStatus = bm.getBoard(featureDir, meta);
+  if (boardStatus) {
+    const colSummary = boardStatus.columns
+      .map(c => `${c.tasks.length} ${c.name}`)
+      .join(' | ');
+    console.log(chalk.gray('Board:'), colSummary);
+
+    const violations = bm.checkWipLimits(boardStatus);
+    if (violations.length > 0) {
+      for (const v of violations) {
+        console.log(chalk.yellow(`WIP: "${v.column}" ${v.current}/${v.limit}`));
+      }
+    } else {
+      console.log(chalk.gray('WIP:'), 'OK');
+    }
+
+    const suggestions = bm.suggestNext(boardStatus);
+    if (suggestions.length > 0) {
+      const top = suggestions[0];
+      console.log(chalk.cyan(`Next: ${top.taskId} "${top.description}" (${top.reason})`));
+    }
+    console.log();
+  }
+
+  // Show source issue if present
+  if (meta.sourceIssue) {
+    console.log(chalk.gray('Source Issue:'), `#${meta.sourceIssue.number} ${meta.sourceIssue.title}`);
+    console.log(chalk.gray('  URL:'), meta.sourceIssue.url);
     console.log();
   }
 }

@@ -23,6 +23,8 @@ import { update } from './update.js';
 import { estimate } from './estimate.js';
 import { validate } from './validate.js';
 import { checkForUpdates, showUpdateNotification, getInstalledVersion } from './version-check.js';
+import { githubSetup, githubStatus, githubSync, githubRefresh } from './setup-github.js';
+import { board } from './board.js';
 
 const SEDD_DIR = '.sedd';
 
@@ -182,12 +184,14 @@ async function main(): Promise<void> {
     .argument('<feature-name>', 'Feature name (e.g., "user-auth")')
     .option('-d, --description <desc>', 'Brief description')
     .option('-e, --expectation <exp>', 'Expected outcome')
+    .option('--from-issue <url>', 'Create feature from GitHub issue URL')
     .action(specify);
 
   program
     .command('clarify')
     .description('Create new migration with clarify/tasks/decisions')
     .argument('[branch]', 'Feature branch (auto-detected)')
+    .option('--from-issue <url>', 'Pre-populate from GitHub issue URL')
     .action(clarify);
 
   program
@@ -226,6 +230,39 @@ async function main(): Promise<void> {
     .option('--full-diff', 'Show full git diff')
     .option('-j, --json', 'Output as JSON')
     .action(validate);
+
+  program
+    .command('board')
+    .description('Show kanban board for current feature')
+    .option('-a, --all', 'Show boards for all features')
+    .option('-j, --json', 'Output as JSON')
+    .option('--move <task-id>', 'Move task to column (use with column name as next arg)')
+    .option('--sync', 'Sync board with GitHub')
+    .action(board);
+
+  const github = program
+    .command('github')
+    .description('GitHub Projects integration');
+
+  github
+    .command('setup')
+    .description('Configure GitHub Projects integration')
+    .action(githubSetup);
+
+  github
+    .command('status')
+    .description('Show GitHub integration status')
+    .action(githubStatus);
+
+  github
+    .command('sync')
+    .description('Force bidirectional sync with GitHub')
+    .action(githubSync);
+
+  github
+    .command('refresh')
+    .description('Re-read columns from GitHub project')
+    .action(githubRefresh);
 
   // No arguments - show welcome
   if (args.length === 0) {

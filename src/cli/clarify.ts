@@ -3,9 +3,15 @@ import { join } from 'node:path';
 import chalk from 'chalk';
 import { loadConfig, getNextMigrationId, getMigrationFolder, FeatureMeta } from '../types/index.js';
 import { GitOperations } from '../utils/git.js';
+import { GitHubOperations } from '../utils/github.js';
+import { BoardManager } from '../core/board-manager.js';
 import { getSessionTimestamp, formatTimestamp } from '../core/timestamps.js';
 
-export async function clarify(branch?: string): Promise<void> {
+interface ClarifyOptions {
+  fromIssue?: string;
+}
+
+export async function clarify(branch?: string, options: ClarifyOptions = {}): Promise<void> {
   const cwd = process.cwd();
   const config = loadConfig(cwd);
   const git = new GitOperations(cwd);
@@ -33,6 +39,21 @@ export async function clarify(branch?: string): Promise<void> {
     process.exit(1);
   }
 
+  const gh = new GitHubOperations(cwd);
+  const bm = new BoardManager(config, cwd);
+
+  let issueData: { number: number; url: string; title: string; body: string; labels: string[] } | null = null;
+  if (options.fromIssue) {
+    console.log(chalk.blue('i'), `Fetching issue from: ${options.fromIssue}`);
+    const issue = gh.getIssueFromUrl(options.fromIssue);
+    if (!issue) {
+      console.log(chalk.red('Error: Could not fetch issue from URL'));
+      process.exit(1);
+    }
+    issueData = issue;
+    console.log(chalk.green('✓'), `Issue #${issue.number}: ${issue.title}`);
+  }
+
   const meta: FeatureMeta = JSON.parse(readFileSync(metaPath, 'utf-8'));
 
   const migrationId = getNextMigrationId(meta);
@@ -43,20 +64,35 @@ export async function clarify(branch?: string): Promise<void> {
   mkdirSync(migrationDir, { recursive: true });
   console.log(chalk.green('✓'), `Created migration: ${migrationFolder}`);
 
+  if (issueData?.body) {
+    issueData.body = gh.downloadIssueImages(issueData.body, migrationDir);
+  }
+
   const dateStr = formatTimestamp();
   const previousMigration = meta.currentMigration;
+
+  const issueContext = issueData
+    ? `## Context (from GitHub Issue #${issueData.number})
+
+${issueData.body || '(no body)'}
+
+## Expected Outcome
+
+> ${issueData.title}
+`
+    : `## Expected Outcome
+
+> What do you expect to achieve with this migration?
+
+[Define your expected outcome here]
+`;
 
   const clarifyContent = `# Clarification Session - Migration ${migrationId}
 
 **Timestamp:** ${dateStr}
 **Branch:** ${currentBranch}
 
-## Expected Outcome
-
-> What do you expect to achieve with this migration?
-
-[Define your expected outcome here]
-
+${issueContext}
 ---
 
 ## Questions & Answers
@@ -118,11 +154,27 @@ export async function clarify(branch?: string): Promise<void> {
   writeFileSync(metaPath, JSON.stringify(meta, null, 2), 'utf-8');
   console.log(chalk.green('✓'), 'Updated: _meta.json');
 
+  if (issueData && bm.isGitHubEnabled()) {
+    const comment = `SEDD migration ${migrationId} started from this issue`;
+    gh.addIssueComment(issueData.number, comment);
+    console.log(chalk.green('✓'), `Commented on issue #${issueData.number}`);
+
+    const syncPath = join(migrationDir, '.github-sync.json');
+    bm.saveSyncMapping(syncPath, {
+      lastSyncedAt: new Date().toISOString(),
+      tasks: {},
+    });
+  }
+
   console.log(chalk.cyan(`\n✨ Migration ${migrationId} created successfully!`));
-  console.log(chalk.cyan('Next steps:'));
-  console.log('  1. Add questions/answers to clarify.md');
-  console.log('  2. Document decisions in decisions.md');
-  console.log('  3. Run /sedd.tasks to generate tasks');
+  if (issueData) {
+    console.log(chalk.cyan(`Pre-populated from issue #${issueData.number}. Run /sedd.tasks to generate tasks.`));
+  } else {
+    console.log(chalk.cyan('Next steps:'));
+    console.log('  1. Add questions/answers to clarify.md');
+    console.log('  2. Document decisions in decisions.md');
+    console.log('  3. Run /sedd.tasks to generate tasks');
+  }
 
   console.log(chalk.gray('\n---SEDD-OUTPUT---'));
   console.log(
@@ -132,6 +184,7 @@ export async function clarify(branch?: string): Promise<void> {
       migrationFolder,
       migrationDir,
       files: ['clarify.md', 'decisions.md', 'tasks.md'],
+      fromIssue: issueData ? issueData.number : undefined,
     })
   );
 }

@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import chalk from 'chalk';
 import { loadConfig, getTaskId, FeatureMeta } from '../types/index.js';
 import { GitOperations } from '../utils/git.js';
+import { BoardManager } from '../core/board-manager.js';
 
 interface TaskInput {
   story?: string;
@@ -115,6 +116,47 @@ export async function addTasks(
   meta.migrations[migrationId].status = 'in-progress';
   writeFileSync(metaPath, JSON.stringify(meta, null, 2), 'utf-8');
 
+  const bm = new BoardManager(config, cwd);
+  if (bm.isGitHubEnabled()) {
+    console.log(chalk.gray('\nSyncing with GitHub...'));
+    let synced = 0;
+    let startNum = nextNum - taskList.length;
+    for (const task of taskList) {
+      const taskId = getTaskId(migrationId, startNum);
+      const story = task.story ? `[${task.story}] ` : '';
+      const result = bm.createIssueForTask(
+        featureDir,
+        migInfo.folder,
+        taskId,
+        `${story}${task.description}`,
+        `${meta.featureId}-${meta.featureName}`,
+        migrationId,
+      );
+      if (result) {
+        console.log(chalk.green(`  ✓ ${taskId} → issue #${result.issueNumber}`));
+        synced++;
+      }
+      startNum++;
+    }
+    if (synced > 0) {
+      console.log(chalk.green(`Synced ${synced} task(s) to GitHub`));
+    }
+
+    // Check WIP limits
+    const boardStatus = bm.getBoard(featureDir, meta);
+    if (boardStatus) {
+      const violations = bm.checkWipLimits(boardStatus);
+      const enforcement = config.github?.wipEnforcement || 'warn';
+      for (const v of violations) {
+        if (enforcement === 'block') {
+          console.log(chalk.red(`✗ WIP BLOCKED: "${v.column}" has ${v.current}/${v.limit} items`));
+        } else {
+          console.log(chalk.yellow(`⚠ WIP: "${v.column}" has ${v.current}/${v.limit} items`));
+        }
+      }
+    }
+  }
+
   console.log(chalk.gray('\n---SEDD-OUTPUT---'));
   console.log(
     JSON.stringify({
@@ -196,7 +238,9 @@ export async function completeTask(taskId: string): Promise<void> {
   meta.migrations[migId].tasksCompleted++;
 
   const { tasksCompleted, tasksTotal } = meta.migrations[migId];
-  if (tasksCompleted >= tasksTotal) {
+  const allDone = tasksCompleted >= tasksTotal;
+
+  if (allDone) {
     meta.migrations[migId].status = 'completed';
     meta.migrations[migId].completedAt = new Date().toISOString();
     console.log(chalk.cyan(`Migration ${migId} completed!`));
@@ -204,6 +248,92 @@ export async function completeTask(taskId: string): Promise<void> {
 
   writeFileSync(metaPath, JSON.stringify(meta, null, 2), 'utf-8');
   console.log(chalk.white(`Progress: ${tasksCompleted}/${tasksTotal} tasks`));
+
+  const bm = new BoardManager(config, cwd);
+  if (bm.isGitHubEnabled()) {
+    const ghConfig = config.github!;
+    const syncPath = join(featureDir, migInfo.folder, '.github-sync.json');
+    const syncData = bm.loadSyncMapping(syncPath);
+    const taskSync = syncData.tasks[taskId];
+
+    if (taskSync && ghConfig.project) {
+      const doneCol = ghConfig.columnMapping.completed;
+      const optionId = ghConfig.columns.options[doneCol];
+      if (optionId) {
+        bm.getGh().moveItem(
+          ghConfig.project.projectId,
+          taskSync.itemId,
+          ghConfig.columns.fieldId,
+          optionId,
+        );
+      }
+
+      const tasksContent = readFileSync(join(featureDir, migInfo.folder, 'tasks.md'), 'utf-8');
+      const taskLines = tasksContent.split('\n')
+        .filter(l => /^- \[[ x]\] T\d{3}-\d{3}/.test(l))
+        .slice(0, 10)
+        .join('\n');
+
+      const comment = [
+        `✅ Task ${taskId} completed via SEDD`,
+        `Migration: ${migId}`,
+        `Branch: ${branch}`,
+        '',
+        `Related tasks (${tasksCompleted}/${tasksTotal}):`,
+        taskLines,
+      ].join('\n');
+
+      bm.getGh().addIssueComment(taskSync.issueNumber, comment);
+      console.log(chalk.gray(`  Synced: issue #${taskSync.issueNumber} → Done`));
+    }
+
+    if (allDone && meta.sourceIssue) {
+      const summaryComment = [
+        `✅ Feature ${meta.featureId}-${meta.featureName} completed via SEDD`,
+        '',
+        `Migrations: ${Object.keys(meta.migrations).length}`,
+        `Tasks: ${tasksCompleted} completed`,
+        `Commits: ${meta.commits.length}`,
+        `Branch: ${meta.branch}`,
+      ].join('\n');
+
+      bm.getGh().addIssueComment(meta.sourceIssue.number, summaryComment);
+      bm.getGh().closeIssue(meta.sourceIssue.number);
+
+      if (ghConfig.project) {
+        const sourceSyncPath = join(featureDir, '.github-source-sync.json');
+        if (existsSync(sourceSyncPath)) {
+          const sourceSync = JSON.parse(readFileSync(sourceSyncPath, 'utf-8'));
+          if (sourceSync.itemId) {
+            const doneCol = ghConfig.columnMapping.completed;
+            const optionId = ghConfig.columns.options[doneCol];
+            if (optionId) {
+              bm.getGh().moveItem(
+                ghConfig.project.projectId,
+                sourceSync.itemId,
+                ghConfig.columns.fieldId,
+                optionId,
+              );
+            }
+          }
+        }
+      }
+
+      console.log(chalk.cyan(`  Closed source issue #${meta.sourceIssue.number}`));
+    }
+
+    // Suggest next task
+    if (!allDone) {
+      const boardStatus = bm.getBoard(featureDir, meta);
+      if (boardStatus) {
+        const suggestions = bm.suggestNext(boardStatus);
+        if (suggestions.length > 0) {
+          const top = suggestions[0];
+          console.log(chalk.cyan(`\nNext: ${top.taskId} "${top.description}" (${top.reason})`));
+        }
+      }
+    }
+  }
 
   console.log(chalk.gray('\n---SEDD-OUTPUT---'));
   console.log(

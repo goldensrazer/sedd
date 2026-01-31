@@ -1,4 +1,43 @@
 export type MigrationStatus = 'pending' | 'in-progress' | 'completed';
+export type TaskEngine = 'local' | 'github' | 'both';
+export type AutoSync = 'ask' | 'auto' | 'off';
+
+export interface WipLimits {
+  [column: string]: number | undefined;
+}
+
+export interface GitHubProjectConfig {
+  projectNumber: number;
+  projectId: string;
+  title: string;
+}
+
+export interface GitHubConfig {
+  engine: TaskEngine;
+  owner?: string;
+  repo?: string;
+  project?: GitHubProjectConfig;
+  columns: {
+    fieldId: string;
+    options: Record<string, string>;
+  };
+  columnMapping: {
+    pending: string;
+    'in-progress': string;
+    completed: string;
+    blocked: string;
+  };
+  wipLimits?: WipLimits;
+  wipEnforcement?: 'warn' | 'block';
+  autoSync?: AutoSync;
+  labels?: { feature?: string; task?: string };
+}
+
+export interface SourceIssue {
+  number: number;
+  url: string;
+  title: string;
+}
 
 export interface MigrationInfo {
   id: string;
@@ -37,6 +76,7 @@ export interface FeatureMeta {
   splits: SplitInfo[];
   commits: CommitInfo[];
   expectation?: string;
+  sourceIssue?: SourceIssue;
 }
 
 export interface TaskInfo {
@@ -73,6 +113,7 @@ export interface SeddConfig {
   autoSplit: AutoSplitConfig;
   hooks: HooksConfig;
   commit: CommitConfig;
+  github?: GitHubConfig;
 }
 
 export const DEFAULT_CONFIG: SeddConfig = {
@@ -91,7 +132,107 @@ export const DEFAULT_CONFIG: SeddConfig = {
     askBeforeCommit: true,
     messagePattern: '{{type}}({{id}}): {{message}}',
   },
+  github: {
+    engine: 'local',
+    columns: { fieldId: '', options: {} },
+    columnMapping: {
+      pending: 'Todo',
+      'in-progress': 'In Progress',
+      completed: 'Done',
+      blocked: 'Blocked',
+    },
+    autoSync: 'ask',
+  },
 };
+
+// GitHub API response types
+export interface GitHubIssueInfo {
+  number: number;
+  url: string;
+  title: string;
+  body: string;
+  state: string;
+  labels: string[];
+}
+
+export interface GitHubProjectInfo {
+  number: number;
+  id: string;
+  title: string;
+}
+
+export interface GitHubFieldInfo {
+  id: string;
+  name: string;
+  options?: Array<{ id: string; name: string }>;
+}
+
+export interface GitHubProjectItem {
+  id: string;
+  title: string;
+  status: string;
+  issueNumber?: number;
+  issueUrl?: string;
+}
+
+export interface GitHubOrganization {
+  login: string;
+  name: string;
+}
+
+export interface OwnerChoice {
+  label: string;
+  value: string;
+}
+
+export interface GitHubSyncMapping {
+  lastSyncedAt: string;
+  tasks: Record<string, {
+    issueNumber: number;
+    issueUrl: string;
+    itemId: string;
+  }>;
+}
+
+// Board types
+export interface BoardColumn {
+  name: string;
+  tasks: BoardTask[];
+  wipLimit?: number;
+}
+
+export interface BoardTask {
+  id: string;
+  description: string;
+  status: string;
+  issueNumber?: number;
+}
+
+export interface BoardStatus {
+  featureName: string;
+  migrationId: string;
+  columns: BoardColumn[];
+}
+
+export interface WipViolation {
+  column: string;
+  current: number;
+  limit: number;
+}
+
+export interface FlowSuggestion {
+  taskId: string;
+  description: string;
+  reason: string;
+  score: number;
+}
+
+export interface SyncResult {
+  synced: number;
+  created: number;
+  moved: number;
+  errors: string[];
+}
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';

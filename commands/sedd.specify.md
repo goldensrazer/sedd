@@ -193,6 +193,9 @@ sedd specify 024 dark-mode-toggle -d "Add dark mode support"
 # Create with expectation (recommended)
 sedd specify 024 dark-mode-toggle -d "Add dark mode support" -e "User can toggle dark mode"
 
+# Create from GitHub issue (reads title, body, labels)
+sedd specify 042 from-issue --from-issue https://github.com/owner/repo/issues/42
+
 # Check structure
 sedd check
 
@@ -203,5 +206,24 @@ sedd status
 **Options:**
 - `-d, --description` - Feature description
 - `-e, --expectation` - Expected outcome (used for alignment verification)
+- `--from-issue <url>` - Create feature from a GitHub issue URL
+
+### --from-issue Flow
+
+When `--from-issue` is provided:
+
+1. Fetches issue title, body, and labels from GitHub
+2. Uses issue title as feature name (if feature-name is `from-issue` or `_`)
+3. Extracts acceptance criteria from issue body (if present)
+4. Creates branch, spec.md, interfaces.ts, _meta.json
+5. **Downloads images** from the issue body to `assets/` and rewrites links to relative paths (e.g. `./assets/image-001.png`), so the AI can see the visual content via Read tool
+6. Saves `sourceIssue` in `_meta.json` (permanent link)
+7. Moves issue to "In Progress" on the GitHub project board
+8. Comments on the issue: "SEDD feature created from this issue"
+
+Supported image formats: `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg`, and any `github.com/user-attachments` URL.
+If a download fails, the original URL link is kept.
+
+**Requires:** `gh` CLI installed and authenticated. GitHub integration (`sedd github setup`) needed for board/comment features.
 
 Scripts also available in `.sedd/scripts/powershell/sedd-specify.ps1` and `.sedd/scripts/bash/sedd-specify.sh`.

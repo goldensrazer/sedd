@@ -179,9 +179,22 @@ Criar migration de follow-up? [Y/n]
 |---------|-----------|
 | `sedd init` | Inicializar SEDD no projeto |
 | `sedd specify <id> <name>` | Criar nova feature spec |
+| `sedd specify <id> <name> --from-issue <url>` | Criar feature a partir de GitHub issue (baixa imagens) |
 | `sedd clarify` | Criar migration com decisões |
+| `sedd clarify --from-issue <url>` | Pre-popular migration com dados de GitHub issue (baixa imagens) |
 | `sedd status` | Ver status atual |
+| `sedd check` | Verificar estrutura e pre-requisitos |
+| `sedd tasks <json>` | Adicionar tasks a migration atual |
+| `sedd complete <task-id>` | Marcar task como concluida |
+| `sedd estimate` | Estimar esforco da feature atual |
+| `sedd validate` | Validar implementacao contra expectativa |
+| `sedd board` | Kanban board no terminal |
 | `sedd update` | Atualizar templates e migrar features existentes |
+| `sedd migrate` | Migrar specs legados para nova estrutura |
+| `sedd github setup` | Configurar integracao com GitHub Projects |
+| `sedd github status` | Ver status da integracao GitHub |
+| `sedd github sync` | Forcar sync bidirecional com GitHub |
+| `sedd github refresh` | Re-ler colunas do projeto GitHub |
 
 ## Slash Commands (AI)
 
@@ -194,6 +207,9 @@ Criar migration de follow-up? [Y/n]
 | `/sedd.dashboard` | Ver status atual de migrations e tasks |
 | `/sedd.estimate` | Estimar prazo e complexidade antes de começar |
 | `/sedd.validate` | Validar implementação contra expectativa |
+| `/sedd.board` | Ver kanban board da feature |
+| `/sedd.tasks` | Gerar tasks para migration |
+| `/sedd.migrate` | Migrar specs legados |
 
 ---
 
@@ -318,12 +334,16 @@ Gaps:         1 encontrado
 .sedd/001-user-auth/
 ├── spec.md                       # Especificação + Expectativa
 ├── _meta.json                    # Metadados + expectation estruturada
+├── assets/                       # Imagens baixadas de GitHub issues
+│   ├── image-001.png
+│   └── image-002.jpg
 │
 ├── 001_timestamp/                # Migration 1
 │   ├── clarify.md               # Discussão + DEVE/NÃO DEVE
 │   ├── decisions.md             # Decisões
 │   ├── tasks.md                 # Tasks T001-XXX
-│   └── acceptance.md            # Critérios positivos e negativos
+│   ├── acceptance.md            # Critérios positivos e negativos
+│   └── assets/                  # Imagens de --from-issue no clarify
 │
 └── progress.md                   # Progresso + checkpoints + desvios
 ```
@@ -365,6 +385,114 @@ Pending tasks:
 
 ---
 
+## GitHub Integration
+
+SEDD integra com GitHub Projects V2 para sincronizar tasks como issues e gerenciar status via kanban board.
+
+### Passo a passo
+
+**1. Instalar GitHub CLI**
+
+```bash
+# Windows
+winget install GitHub.cli
+
+# Mac
+brew install gh
+
+# Linux
+sudo apt install gh
+```
+
+**2. Autenticar**
+
+```bash
+gh auth login
+```
+
+Selecione as opcoes:
+- `GitHub.com`
+- `HTTPS`
+- `Login with a web browser`
+
+O terminal vai mostrar um codigo (ex: `XXXX-XXXX`). Copie o codigo no terminal e cole no navegador quando solicitado.
+
+Verifique:
+```bash
+gh auth status
+```
+
+**3. Adicionar scope de projetos**
+
+```bash
+gh auth refresh -s project
+```
+
+O terminal vai mostrar outro codigo. Mesmo processo: copie no terminal e cole no navegador.
+
+**4. Ter um GitHub Project**
+
+Va em github.com > seu repo > Projects > New Project > Board.
+Crie colunas como: Todo, In Progress, Done.
+
+**5. Configurar SEDD**
+
+```bash
+sedd github setup
+```
+
+O setup interativo vai:
+- Detectar seu repositorio
+- Listar suas organizacoes e conta pessoal
+- Permitir escolher o owner dos projetos
+- Listar projetos disponiveis
+- Mapear colunas do board
+
+### Comandos GitHub
+
+| Comando | Descricao |
+|---------|-----------|
+| `sedd github setup` | Configuracao interativa |
+| `sedd github status` | Ver config e testar conexao |
+| `sedd github sync` | Forcar sync bidirecional |
+| `sedd github refresh` | Re-ler colunas se mudaram no GitHub |
+| `sedd board` | Kanban board no terminal |
+
+### Funcionalidades
+
+- Use `--from-issue <url>` no `sedd specify` ou `sedd clarify` para criar features/migrations a partir de GitHub issues
+- Imagens da issue sao baixadas automaticamente para `assets/` e os links reescritos para paths relativos, permitindo que a AI veja o conteudo visual
+- Use `sedd board` para visualizar o kanban no terminal
+- Multi-org: escolha entre suas organizacoes e conta pessoal durante o setup
+
+### From Issue com Download de Imagens
+
+Ao usar `--from-issue`, o SEDD automaticamente:
+
+1. Busca titulo, body e labels da issue
+2. Detecta imagens no body (`.png`, `.jpg`, `.gif`, `.webp`, `.svg` e `github.com/user-attachments`)
+3. Baixa cada imagem para `assets/` dentro do diretorio da feature/migration
+4. Reescreve os links markdown para paths relativos (`./assets/image-001.png`)
+
+```bash
+sedd specify 042 from-issue --from-issue https://github.com/org/repo/issues/42
+
+  ✓ Issue #42: Add dark mode toggle
+  ✓ Downloaded 3 images to assets/
+```
+
+Resultado no `spec.md`:
+```markdown
+![screenshot](./assets/image-001.png)
+![mockup](./assets/image-002.png)
+```
+
+Isso permite que a AI veja o conteudo visual das imagens via Read tool, em vez de apenas a URL como texto.
+
+Se o download de alguma imagem falhar, o link original e mantido.
+
+---
+
 ## Configuração
 
 `sedd.config.json`:
@@ -373,7 +501,17 @@ Pending tasks:
 {
   "specsDir": ".sedd",
   "branchPattern": "{{id}}-{{name}}",
-  "scriptRunner": "auto"
+  "scriptRunner": "auto",
+  "github": {
+    "engine": "both",
+    "owner": "user",
+    "repo": "my-project",
+    "project": {
+      "projectNumber": 3,
+      "projectId": "PVT_...",
+      "title": "My Kanban"
+    }
+  }
 }
 ```
 
