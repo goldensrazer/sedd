@@ -20,7 +20,11 @@ User runs `/sedd.specify "feature description"` or `/sedd.specify` (interactive)
 
 3. **Check for existing feature branch**
    - If on feature branch (###-name): use existing feature
-   - If not: create new feature
+   - If on master/main or outra branch nao-feature:
+     1. Determinar proximo feature ID (buscar maior ###- nas branches + 1)
+     2. Criar branch `{id}-{nome}` com `git checkout -b {id}-{nome}`
+     3. Confirmar: "Criei a branch {id}-{nome} e ja estou nela"
+     4. SO ENTAO prosseguir com criacao da estrutura
 
 ## Configuration
 

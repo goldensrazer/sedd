@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import chalk from 'chalk';
 import { loadConfig, FeatureMeta } from '../types/index.js';
+import { GitOperations } from '../utils/git.js';
 
 interface SpecifyOptions {
   description?: string;
@@ -16,6 +17,21 @@ export async function specify(
   const cwd = process.cwd();
   const config = loadConfig(cwd);
   const branchName = `${featureId}-${featureName}`;
+
+  const git = new GitOperations(cwd);
+  const currentBranch = git.getCurrentBranch();
+
+  if (!git.isFeatureBranch(currentBranch)) {
+    console.log(chalk.blue('i'), `On ${currentBranch}, creating feature branch...`);
+    const success = git.createBranch(branchName);
+    if (!success) {
+      console.log(chalk.red('Error: Could not create branch'), branchName);
+      process.exit(1);
+    }
+    console.log(chalk.green('✓'), `Created and switched to branch: ${branchName}`);
+  } else {
+    console.log(chalk.blue('i'), `Already on feature branch: ${currentBranch}`);
+  }
   const featureDir = join(cwd, config.specsDir, branchName);
 
   if (existsSync(featureDir)) {

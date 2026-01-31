@@ -51,26 +51,67 @@ User runs `/sedd.clarify`
 - Every migration has tasks.md (generated at the end)
 - Tasks reference this migration ID
 
+⚠️ **ANNOTATE EVERYTHING - TUDO VIRA TASK**
+- Cada ponto do usuario → anotar como fonte de task
+- Cada sugestao da AI aceita → anotar como fonte de task
+- Cada decisao tomada → anotar implicacoes como fontes de task
+- Cada edge case levantado → anotar como fonte de task
+- Formato: **[TASK_SOURCE:{tipo}]** antes de cada ponto anotado
+- Tipos: user-req, ai-suggestion, decision, edge-case, constraint
+
 ## Workflow
 
-### Step 1: Capture Expected Outcome (FIRST - MANDATORY)
+### Step 1: Load Context PRIMEIRO
 
-**ANTES DE QUALQUER COISA**, pergunte ao usuário:
+Read from feature root:
+- spec.md (especialmente `## Expectation` e user stories)
+- interfaces.ts (entidades)
+- _meta.json (expectation do specify)
+- Previous migrations (if any)
 
-```
-🎯 Qual é sua EXPECTATIVA para esta clarificação?
+### Step 1.5: Suggest Expectations (PROACTIVE)
 
-O que você espera ter funcionando ao final desta migration?
-(Isso será usado para validar se as tasks cobrem seu objetivo)
-```
+Com base no contexto carregado, AI DEVE:
+
+1. Apresentar a expectativa original da spec:
+   > "Expectativa original (da spec): {quote}"
+
+2. SUGERIR expectativas adicionais para esta migration baseado em:
+   - User stories nao cobertas por migrations anteriores
+   - Edge cases identificados nas interfaces
+   - Dependencias entre entidades
+   - Potenciais problemas de performance/seguranca
+   - Gaps entre a expectativa original e o que ja foi implementado
+
+3. Apresentar assim:
+   ```
+   Com base na spec e no que ja temos, sugiro para esta migration:
+
+   DEVE:
+   - [sugestao 1 baseada na spec]
+   - [sugestao 2 baseada em edge case]
+   - [sugestao 3 baseada em dependencia]
+
+   NAO DEVE:
+   - [restricao identificada]
+
+   Potenciais que identifiquei:
+   - [concern 1]
+   - [concern 2]
+
+   Quer acrescentar algo? Quer que eu veja outro potencial?
+   ```
+
+4. Aguardar usuario confirmar, ajustar, ou adicionar
+5. SO ENTAO consolidar expectativa final (summary + must + mustNot)
 
 Save in `clarify.md` under `## Expected Outcome` section (NO TOPO).
 
-**NÃO PROSSIGA** sem a expectativa do usuário.
+**NÃO PROSSIGA** sem a expectativa do usuário confirmada.
 
-### Step 1.5: Detail MUST and MUST NOT (STRUCTURED EXPECTATION)
+### Step 2: Detail MUST and MUST NOT (STRUCTURED EXPECTATION)
 
-Após capturar o resumo da expectativa, detalhar com regras claras:
+Após consolidar as expectativas (originais + sugeridas + usuario), detalhar com regras claras:
 
 ```
 Agora vamos detalhar sua expectativa:
@@ -110,13 +151,6 @@ Save in `clarify.md` under `## Expectation Details`:
   }
 }
 ```
-
-### Step 2: Load Context
-
-Read from feature root:
-- spec.md (especialmente a seção Expectation original)
-- interfaces.ts
-- Previous migrations (if any)
 
 ### Step 3: Create New Migration Folder
 
@@ -199,9 +233,10 @@ When user provides information (not a command):
 "O sistema precisa suportar múltiplos tenants, cada um com suas próprias configurações..."
 
 **Key Points Extracted:**
-- Multi-tenant architecture required
-- Per-tenant configuration
-- Isolation between tenants
+- **[TASK_SOURCE:user-req]** Multi-tenant architecture required
+- **[TASK_SOURCE:user-req]** Per-tenant configuration
+- **[TASK_SOURCE:ai-suggestion]** Isolation strategy needs definition
+- **[TASK_SOURCE:edge-case]** Cross-tenant data leaks prevention
 
 ---
 ```
@@ -274,7 +309,14 @@ Proceed to Step 6 (Generate Tasks).
 
 ### Step 6: Generate tasks.md (After All Q&A Complete)
 
-Based on all decisions, create tasks:
+Ao gerar tasks, VARRER clarify.md por TODOS os `[TASK_SOURCE:*]` tags:
+- Cada tag com tipo `user-req` → task obrigatoria
+- Cada tag com tipo `ai-suggestion` (aceita) → task obrigatoria
+- Cada tag com tipo `decision` → task para implementar decisao
+- Cada tag com tipo `edge-case` → task de validacao/protecao
+- Cada tag com tipo `constraint` → task de teste negativo
+
+Based on all decisions and TASK_SOURCE tags, create tasks:
 
 ```markdown
 # Tasks - Migration 001
