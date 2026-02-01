@@ -537,6 +537,47 @@ Continue with migration 002? [Y/n]
 
 If user specified a migration ID, stop after that migration.
 
+### Step 11: GitHub Sync (when ALL tasks complete)
+
+When all migrations are done and no pending tasks remain, automatically sync with GitHub:
+
+1. **Read `_meta.json`** to get `sourceIssue`
+
+2. **If `sourceIssue` exists and issue is still OPEN:**
+
+   a. The last `sedd complete` call should have already closed the source issue (it does this automatically when `allDone`). Verify by checking if the issue is closed.
+
+   b. **If issue is still open** (e.g., sync failed or `sedd complete` didn't trigger it), close manually:
+
+   ```bash
+   # Comment with completion summary
+   gh issue comment {SOURCE_ISSUE_NUMBER} --body "✅ Feature completed via /sedd.implement
+
+   Migrations: {N} completed
+   Tasks: {COMPLETED}/{TOTAL}
+   Branch: {BRANCH}"
+
+   # Close the issue
+   gh issue close {SOURCE_ISSUE_NUMBER}
+   ```
+
+   c. **Move on project board** to Done (if configured and not already moved)
+
+3. **If no `sourceIssue`:** inform the user that no source issue is linked
+
+4. **Display sync result:**
+   ```
+   🔄 GitHub Sync:
+      Source Issue: #42 → Closed ✅
+      Project Board: → Done ✅
+   ```
+
+5. **Suggest next step:**
+   ```
+   📍 Próximo passo recomendado:
+      /sedd.validate - Validar implementação contra expectativa
+   ```
+
 ## Task States
 
 ```

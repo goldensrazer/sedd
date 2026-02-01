@@ -323,6 +323,58 @@ The CLI will add to tasks.md:
 Criar task de follow-up? [Y/n]
 ```
 
+### Step 10: GitHub Sync (on FEATURE COMPLETA)
+
+When recommendation is `"complete"` (100% coverage, 0 gaps, 0 violations):
+
+1. **Read `_meta.json`** to get `sourceIssue` and check if all tasks are marked `[x]` in `tasks.md`
+
+2. **If `sourceIssue` exists and issue is still OPEN:**
+
+   a. **Check if `sedd complete` was already run** for the last task. If the source issue is already closed, skip — sync already happened.
+
+   b. **If not yet synced**, run `sedd complete` for any remaining uncompleted tasks to trigger the built-in GitHub sync. The `sedd complete` command (tasks.ts) automatically:
+      - Comments on the source issue with a completion summary
+      - Closes the source issue via `gh issue close`
+      - Moves the item to "Done" on the project board
+
+   c. **If `sedd complete` cannot be used** (e.g., no pending tasks left but issue still open), sync manually:
+
+   ```bash
+   # Comment on source issue with validation summary
+   gh issue comment {SOURCE_ISSUE_NUMBER} --body "✅ Feature validated via /sedd.validate
+
+   Cobertura: 100%
+   Tasks: {COMPLETED}/{TOTAL} completadas
+   Violações: 0
+   Gaps: 0
+
+   Validation report: .sedd/{FEATURE}/{MIGRATION}/validation.md"
+
+   # Close the source issue
+   gh issue close {SOURCE_ISSUE_NUMBER}
+   ```
+
+   d. **Move on project board** (if configured in `sedd.config.json`):
+   ```bash
+   # Read .github-source-sync.json for the itemId
+   # Use gh api to move item to Done column
+   ```
+
+3. **If no `sourceIssue` in `_meta.json`:**
+   ```
+   ℹ️ Nenhuma source issue vinculada.
+      Para vincular: adicione "sourceIssue" ao _meta.json
+      ou crie a feature via /sedd.story
+   ```
+
+4. **Display sync result:**
+   ```
+   🔄 GitHub Sync:
+      Source Issue: #42 → Closed ✅
+      Project Board: → Done ✅
+   ```
+
 ## Output
 
 1. **validation.md** - Relatório completo de validação
