@@ -227,7 +227,10 @@ All notable changes to this feature will be documented in this file.
     gh.addIssueComment(sourceIssue.number, comment);
 
     if (ghConfig.project) {
-      const itemId = gh.addIssueToProject(ghConfig.project.projectId, sourceIssue.url);
+      let itemId = gh.addIssueToProject(ghConfig.project.projectId, sourceIssue.url);
+      if (!itemId && ghConfig.owner && ghConfig.project.projectNumber) {
+        itemId = gh.findProjectItemByIssue(ghConfig.owner, ghConfig.project.projectNumber, sourceIssue.number);
+      }
       if (itemId) {
         const inProgressCol = ghConfig.columnMapping['in-progress'];
         const optionId = ghConfig.columns.options[inProgressCol];

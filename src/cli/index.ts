@@ -25,6 +25,7 @@ import { validate } from './validate.js';
 import { checkForUpdates, showUpdateNotification, getInstalledVersion } from './version-check.js';
 import { githubSetup, githubStatus, githubSync, githubRefresh } from './setup-github.js';
 import { board } from './board.js';
+import { story } from './story.js';
 
 const SEDD_DIR = '.sedd';
 
@@ -239,6 +240,20 @@ async function main(): Promise<void> {
     .option('--move <task-id>', 'Move task to column (use with column name as next arg)')
     .option('--sync', 'Sync board with GitHub')
     .action(board);
+
+  program
+    .command('story')
+    .description('Create a GitHub Issue as a user story with expectations')
+    .option('-t, --title <title>', 'Story title')
+    .option('--como <como>', 'User type')
+    .option('--quero <quero>', 'Desired action')
+    .option('--para <para>', 'Expected benefit')
+    .option('--expectativas <exp>', 'Expectations (semicolon-separated)')
+    .option('--criterios <crit>', 'Acceptance criteria (semicolon-separated)')
+    .option('--contexto <ctx>', 'Technical context')
+    .option('--labels <labels>', 'Labels (comma-separated, default: user-story)')
+    .option('--from-spec', 'Read from current feature spec')
+    .action(story);
 
   const github = program
     .command('github')

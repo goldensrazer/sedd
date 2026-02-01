@@ -1,6 +1,6 @@
 {
   "name": "sedd",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "SEDD - Spec & Expectation Driven Development. A phase-based specification workflow for AI-assisted development.",
   "type": "module",
   "main": "dist/index.js",

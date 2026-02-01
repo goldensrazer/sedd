@@ -189,6 +189,8 @@ Criar migration de follow-up? [Y/n]
 | `sedd estimate` | Estimar esforco da feature atual |
 | `sedd validate` | Validar implementacao contra expectativa |
 | `sedd board` | Kanban board no terminal |
+| `sedd story` | Criar GitHub Issue como user story (Como/Quero/Para + ESPERA-SE) |
+| `sedd story --from-spec` | Criar story a partir da spec da feature atual |
 | `sedd update` | Atualizar templates e migrar features existentes |
 | `sedd migrate` | Migrar specs legados para nova estrutura |
 | `sedd github setup` | Configurar integracao com GitHub Projects |
@@ -207,6 +209,7 @@ Criar migration de follow-up? [Y/n]
 | `/sedd.dashboard` | Ver status atual de migrations e tasks |
 | `/sedd.estimate` | Estimar prazo e complexidade antes de começar |
 | `/sedd.validate` | Validar implementação contra expectativa |
+| `/sedd.story` | Criar user story interativa (Como/Quero/Para + ESPERA-SE) |
 | `/sedd.board` | Ver kanban board da feature |
 | `/sedd.tasks` | Gerar tasks para migration |
 | `/sedd.migrate` | Migrar specs legados |
@@ -490,6 +493,78 @@ Resultado no `spec.md`:
 Isso permite que a AI veja o conteudo visual das imagens via Read tool, em vez de apenas a URL como texto.
 
 Se o download de alguma imagem falhar, o link original e mantido.
+
+### User Story como GitHub Issue
+
+O comando `sedd story` cria issues no formato **Como/Quero/Para** com expectativas (**ESPERA-SE**) e criterios de aceite. A issue e adicionada automaticamente ao GitHub Project configurado na coluna "Todo".
+
+**Standalone — todos os campos via flags:**
+
+```bash
+sedd story \
+  --title "Auto check-in" \
+  --como "usuario do sistema" \
+  --quero "check-in automatico ao chegar no local" \
+  --para "reduzir acoes manuais e ganhar tempo" \
+  --expectativas "check-in ao chegar;check-out ao sair;notificacao de confirmacao" \
+  --criterios "sistema detecta localizacao;registro com timestamp" \
+  --contexto "Aggregate root: Booking, Event sourcing" \
+  --labels "user-story,mvp"
+```
+
+**From spec — le da feature atual:**
+
+```bash
+# Na branch da feature (ex: 001-user-auth)
+sedd story --from-spec
+
+# Com override de titulo
+sedd story --from-spec --title "Titulo customizado"
+```
+
+O `--from-spec` extrai automaticamente de `_meta.json` e `spec.md`:
+- Nome da feature → titulo
+- User stories (Como/Quero/Para)
+- Expectation → ESPERA-SE
+- Acceptance criteria → Criterios de aceite
+- Technical requirements → Contexto tecnico
+
+**Resultado na issue:**
+
+```markdown
+## Estoria de Usuario
+
+**Como:** usuario do sistema
+**Quero:** check-in automatico ao chegar no local
+**Para:** reduzir acoes manuais e ganhar tempo
+
+## Expectativas
+
+- **ESPERA-SE:** check-in ao chegar
+- **ESPERA-SE:** check-out ao sair
+- **ESPERA-SE:** notificacao de confirmacao
+
+## Criterios de Aceite
+
+- [ ] sistema detecta localizacao
+- [ ] registro com timestamp
+```
+
+**Opcoes:**
+
+| Flag | Descricao |
+|------|-----------|
+| `-t, --title <title>` | Titulo da issue |
+| `--como <como>` | Tipo de usuario |
+| `--quero <quero>` | Acao desejada |
+| `--para <para>` | Beneficio esperado |
+| `--expectativas <exp>` | ESPERA-SE separadas por `;` |
+| `--criterios <crit>` | Criterios de aceite separados por `;` |
+| `--contexto <ctx>` | Contexto tecnico DDD |
+| `--labels <labels>` | Labels separadas por `,` (default: `user-story`) |
+| `--from-spec` | Ler da spec da feature atual |
+
+**Slash command:** Use `/sedd.story` no Claude para criar a story de forma interativa, com preview e confirmacao antes de criar a issue.
 
 ---
 

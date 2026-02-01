@@ -298,24 +298,49 @@ export class GitHubOperations {
    */
   createIssue(title: string, body: string, labels?: string[]): GitHubIssueInfo | null {
     try {
-      const labelArgs = labels && labels.length > 0
-        ? labels.map(l => `-l "${l}"`).join(' ')
-        : '';
-      const output = this.exec(
-        `gh issue create --title "${title.replace(/"/g, '\\"')}" --body "${body.replace(/"/g, '\\"').replace(/\n/g, '\\n')}" ${labelArgs} --json number,url,title,body,state,labels`
-      );
-      const parsed = JSON.parse(output);
+      const args = ['issue', 'create', '--title', title, '--body', body];
+      if (labels && labels.length > 0) {
+        for (const l of labels) {
+          args.push('-l', l);
+        }
+      }
+      const output = execFileSync('gh', args, {
+        cwd: this.cwd,
+        encoding: 'utf-8',
+        stdio: 'pipe',
+      }).trim();
+
+      // gh issue create returns the issue URL, e.g. https://github.com/owner/repo/issues/42
+      const urlMatch = output.match(/https:\/\/github\.com\/[^\s]+\/issues\/(\d+)/);
+      if (!urlMatch) return null;
+
+      const issueNumber = parseInt(urlMatch[1]);
+      const issueUrl = urlMatch[0];
+
+      // Fetch full issue data
+      const issue = this.getIssue(issueNumber);
+      if (issue) return issue;
+
       return {
-        number: parsed.number,
-        url: parsed.url,
-        title: parsed.title,
-        body: parsed.body || '',
-        state: parsed.state || 'OPEN',
-        labels: (parsed.labels || []).map((l: any) => l.name || l),
+        number: issueNumber,
+        url: issueUrl,
+        title,
+        body,
+        state: 'OPEN',
+        labels: labels || [],
       };
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Find an existing project item by issue number
+   */
+  findProjectItemByIssue(owner: string, projectNumber: number, issueNumber: number): string | null {
+    const items = this.listProjectItems(owner, projectNumber);
+    const item = items.find(i => i.issueNumber === issueNumber);
+    return item?.id || null;
   }
 
   /**
