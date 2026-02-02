@@ -140,28 +140,49 @@ export async function githubSetup(): Promise<void> {
   console.log(chalk.green(`  ✓ Using: ${selectedOwner}`));
 
   console.log(chalk.white('\nStep 6/7: Select project...'));
-  const projects = gh.listProjects(selectedOwner);
-  if (projects.length === 0) {
-    console.log(chalk.yellow('  No projects found.'));
-    console.log(chalk.gray('  Create one at: github.com → repo → Projects → New Project → Board'));
-    process.exit(1);
-  }
 
-  console.log(chalk.gray('  Projects found:'));
-  projects.forEach((p, i) => {
-    console.log(chalk.white(`    ${i + 1}. ${p.title} (#${p.number})`));
-  });
-
-  const { projectIndex } = await inquirer.prompt([{
-    type: 'number',
-    name: 'projectIndex',
-    message: `Select [1-${projects.length}]:`,
-    default: 1,
-    validate: (val: number) => val >= 1 && val <= projects.length ? true : `Enter 1-${projects.length}`,
+  const { projectNumberInput } = await inquirer.prompt([{
+    type: 'input',
+    name: 'projectNumberInput',
+    message: 'Do you know the project number? (leave empty to list all):',
   }]);
 
-  const selectedProject = projects[projectIndex - 1];
-  console.log(chalk.green(`  ✓ Selected: ${selectedProject.title}`));
+  let selectedProject;
+  const trimmed = projectNumberInput?.trim();
+
+  if (trimmed && /^\d+$/.test(trimmed)) {
+    const projectNumber = parseInt(trimmed);
+    const project = gh.getProject(selectedOwner, projectNumber);
+    if (!project) {
+      console.log(chalk.red(`  ✗ Project #${projectNumber} not found or is closed`));
+      process.exit(1);
+    }
+    selectedProject = project;
+    console.log(chalk.green(`  ✓ Selected: ${selectedProject.title} (#${selectedProject.number})`));
+  } else {
+    const projects = gh.listProjects(selectedOwner);
+    if (projects.length === 0) {
+      console.log(chalk.yellow('  No projects found.'));
+      console.log(chalk.gray('  Create one at: github.com → repo → Projects → New Project → Board'));
+      process.exit(1);
+    }
+
+    console.log(chalk.gray('  Projects found:'));
+    projects.forEach((p, i) => {
+      console.log(chalk.white(`    ${i + 1}. ${p.title} (#${p.number})`));
+    });
+
+    const { projectIndex } = await inquirer.prompt([{
+      type: 'number',
+      name: 'projectIndex',
+      message: `Select [1-${projects.length}]:`,
+      default: 1,
+      validate: (val: number) => val >= 1 && val <= projects.length ? true : `Enter 1-${projects.length}`,
+    }]);
+
+    selectedProject = projects[projectIndex - 1];
+    console.log(chalk.green(`  ✓ Selected: ${selectedProject.title}`));
+  }
 
   console.log(chalk.white('\nStep 7/7: Reading board columns...'));
   const statusField = gh.getStatusField(selectedProject.id);

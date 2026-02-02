@@ -142,7 +142,7 @@ export class GitHubOperations {
       const query = `query {
         user(login: "${this.escapeGql(owner)}") {
           projectsV2(first: 20) {
-            nodes { id number title }
+            nodes { id number title closed }
           }
         }
       }`;
@@ -151,7 +151,7 @@ export class GitHubOperations {
       if (!nodes) {
         return this.listOrgProjects(owner);
       }
-      return nodes.map((n: any) => ({
+      return nodes.filter((n: any) => !n.closed).map((n: any) => ({
         number: n.number,
         id: n.id,
         title: n.title,
@@ -166,20 +166,64 @@ export class GitHubOperations {
       const query = `query {
         organization(login: "${this.escapeGql(owner)}") {
           projectsV2(first: 20) {
-            nodes { id number title }
+            nodes { id number title closed }
           }
         }
       }`;
       const data = this.execGraphQL(query);
       const nodes = data?.data?.organization?.projectsV2?.nodes;
       if (!nodes) return [];
-      return nodes.map((n: any) => ({
+      return nodes.filter((n: any) => !n.closed).map((n: any) => ({
         number: n.number,
         id: n.id,
         title: n.title,
       }));
     } catch {
       return [];
+    }
+  }
+
+  /**
+   * Get a specific project by number (tries user, then org)
+   */
+  getProject(owner: string, projectNumber: number): GitHubProjectInfo | null {
+    try {
+      const query = `query {
+        user(login: "${this.escapeGql(owner)}") {
+          projectV2(number: ${projectNumber}) {
+            id number title closed
+          }
+        }
+      }`;
+      const data = this.execGraphQL(query);
+      const node = data?.data?.user?.projectV2;
+      if (node && !node.closed) {
+        return { id: node.id, number: node.number, title: node.title };
+      }
+      if (node && node.closed) return null;
+      return this.getOrgProject(owner, projectNumber);
+    } catch {
+      return this.getOrgProject(owner, projectNumber);
+    }
+  }
+
+  private getOrgProject(owner: string, projectNumber: number): GitHubProjectInfo | null {
+    try {
+      const query = `query {
+        organization(login: "${this.escapeGql(owner)}") {
+          projectV2(number: ${projectNumber}) {
+            id number title closed
+          }
+        }
+      }`;
+      const data = this.execGraphQL(query);
+      const node = data?.data?.organization?.projectV2;
+      if (node && !node.closed) {
+        return { id: node.id, number: node.number, title: node.title };
+      }
+      return null;
+    } catch {
+      return null;
     }
   }
 

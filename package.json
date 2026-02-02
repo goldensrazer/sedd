@@ -1,6 +1,6 @@
 {
   "name": "sedd",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "description": "SEDD - Spec & Expectation Driven Development. A phase-based specification workflow for AI-assisted development.",
   "type": "module",
   "main": "dist/index.js",
@@ -21,6 +21,7 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -56,6 +57,7 @@
   "devDependencies": {
     "@types/inquirer": "^9.0.7",
     "@types/node": "^20.10.0",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "vitest": "^4.0.18"
   }
 }
