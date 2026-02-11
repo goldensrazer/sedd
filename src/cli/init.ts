@@ -168,6 +168,30 @@ export async function init(projectName?: string, options: InitOptions = {}): Pro
     }
   }
 
+  // Register hooks in .claude/settings.json
+  const settingsPath = join(claudeDir, 'settings.json');
+  const hooksConfig = {
+    hooks: {
+      UserPromptSubmit: [{ hooks: [{ type: 'command', command: 'node .claude/hooks/check-roadmap.js', timeout: 10 }] }],
+      SessionStart: [{ matcher: 'startup|resume|compact', hooks: [{ type: 'command', command: 'node .claude/hooks/session-recovery.js', timeout: 10 }] }],
+      PreCompact: [{ hooks: [{ type: 'command', command: 'node .claude/hooks/pre-compact.js', timeout: 10 }] }],
+      Stop: [{ hooks: [{ type: 'command', command: 'node .claude/hooks/session-stop.js', timeout: 10 }] }],
+      SubagentStart: [{ hooks: [{ type: 'command', command: 'node .claude/hooks/subagent-context.js', timeout: 10 }] }],
+    },
+  };
+
+  if (!existsSync(settingsPath) || options.force) {
+    let settings = hooksConfig;
+    if (existsSync(settingsPath)) {
+      try {
+        const existing = JSON.parse(readFileSync(settingsPath, 'utf-8'));
+        settings = { ...existing, ...hooksConfig };
+      } catch { /* use fresh config */ }
+    }
+    writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+    console.log(chalk.green('✓'), `${actionVerb} .claude/settings.json with hook registrations`);
+  }
+
   const seddScriptsDir = join(seddInternalDir, 'scripts');
   if (existsSync(SCRIPTS_DIR)) {
     const isWindows = process.platform === 'win32';

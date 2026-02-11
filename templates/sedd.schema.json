@@ -19,6 +19,12 @@
       "default": "{{id}}-{{name}}",
       "description": "Pattern for feature branch names. Variables: {{id}}, {{name}}"
     },
+    "scriptRunner": {
+      "type": "string",
+      "enum": ["auto", "powershell", "bash"],
+      "default": "auto",
+      "description": "Script runner to use. 'auto' detects platform."
+    },
     "autoSplit": {
       "type": "object",
       "description": "Auto-split configuration for large files",
@@ -86,6 +92,134 @@
           "type": "string",
           "default": "{{type}}({{id}}): {{message}}",
           "description": "Commit message pattern. Variables: {{type}}, {{id}}, {{message}}"
+        }
+      },
+      "additionalProperties": false
+    },
+    "github": {
+      "type": "object",
+      "description": "GitHub integration configuration",
+      "properties": {
+        "engine": {
+          "type": "string",
+          "enum": ["local", "github", "both"],
+          "default": "local",
+          "description": "Task engine: 'local' (markdown only), 'github' (issues only), 'both' (sync both)"
+        },
+        "owner": {
+          "type": "string",
+          "description": "GitHub owner (user or org) for project board"
+        },
+        "repo": {
+          "type": "string",
+          "description": "GitHub repository name"
+        },
+        "project": {
+          "type": "object",
+          "description": "GitHub Projects V2 configuration",
+          "properties": {
+            "projectNumber": {
+              "type": "integer",
+              "description": "Project number (visible in project URL)"
+            },
+            "projectId": {
+              "type": "string",
+              "description": "Project node ID (GraphQL ID)"
+            },
+            "title": {
+              "type": "string",
+              "description": "Project title for display"
+            }
+          },
+          "required": ["projectNumber", "projectId", "title"],
+          "additionalProperties": false
+        },
+        "columns": {
+          "type": "object",
+          "description": "Status field configuration for the project board",
+          "properties": {
+            "fieldId": {
+              "type": "string",
+              "description": "Status field node ID (GraphQL ID)"
+            },
+            "options": {
+              "type": "object",
+              "description": "Map of column name → option ID",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          },
+          "required": ["fieldId", "options"],
+          "additionalProperties": false
+        },
+        "columnMapping": {
+          "type": "object",
+          "description": "Map SEDD statuses to project board column names",
+          "properties": {
+            "pending": {
+              "type": "string",
+              "default": "Todo",
+              "description": "Column for pending/todo items"
+            },
+            "in-progress": {
+              "type": "string",
+              "default": "In Progress",
+              "description": "Column for in-progress items"
+            },
+            "completed": {
+              "type": "string",
+              "default": "Done",
+              "description": "Column for completed items"
+            },
+            "blocked": {
+              "type": "string",
+              "default": "Blocked",
+              "description": "Column for blocked items"
+            }
+          },
+          "additionalProperties": false
+        },
+        "wipLimits": {
+          "type": "object",
+          "description": "WIP limits per column (column name → max items)",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "wipEnforcement": {
+          "type": "string",
+          "enum": ["warn", "block"],
+          "default": "warn",
+          "description": "WIP limit enforcement: 'warn' (show warning) or 'block' (prevent adding)"
+        },
+        "autoSync": {
+          "type": "string",
+          "enum": ["ask", "auto", "off"],
+          "default": "ask",
+          "description": "Auto-sync behavior: 'ask' (prompt user), 'auto' (sync silently), 'off' (no sync)"
+        },
+        "syncTasks": {
+          "type": "string",
+          "enum": ["off", "manual", "auto"],
+          "default": "off",
+          "description": "Task-to-issue sync: 'off' (no task issues), 'manual' (on demand), 'auto' (create issue per task)"
+        },
+        "labels": {
+          "type": "object",
+          "description": "GitHub labels for auto-created issues",
+          "properties": {
+            "feature": {
+              "type": "string",
+              "description": "Label for feature/story issues"
+            },
+            "task": {
+              "type": "string",
+              "description": "Label for task issues"
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

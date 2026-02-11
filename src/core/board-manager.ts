@@ -262,9 +262,14 @@ export class BoardManager {
     const board = this.getBoard(featureDir, meta);
     if (!board) return result;
 
+    const syncTasks = this.config.github?.syncTasks || 'off';
     for (const col of board.columns) {
       for (const task of col.tasks) {
         if (!syncData.tasks[task.id]) {
+          if (syncTasks === 'off') {
+            result.synced++;
+            continue;
+          }
           const issue = this.gh.createIssue(
             `${task.id} ${task.description}`,
             `Task from SEDD migration ${migrationId}\n\nFeature: ${meta.featureId}-${meta.featureName}`,

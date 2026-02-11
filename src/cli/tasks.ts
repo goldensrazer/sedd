@@ -117,7 +117,8 @@ export async function addTasks(
   writeFileSync(metaPath, JSON.stringify(meta, null, 2), 'utf-8');
 
   const bm = new BoardManager(config, cwd);
-  if (bm.isGitHubEnabled()) {
+  const syncTasks = config.github?.syncTasks || 'off';
+  if (bm.isGitHubEnabled() && syncTasks !== 'off') {
     console.log(chalk.gray('\nSyncing with GitHub...'));
     let synced = 0;
     let startNum = nextNum - taskList.length;

@@ -201,6 +201,28 @@ function updateSeddFiles(cwd: string): UpdateResult {
     schemaUpdated = true;
   }
 
+  // 6. Register hooks in .claude/settings.json
+  const settingsPath = join(claudeDir, 'settings.json');
+  const hooksConfig = {
+    hooks: {
+      UserPromptSubmit: [{ hooks: [{ type: 'command', command: 'node .claude/hooks/check-roadmap.js', timeout: 10 }] }],
+      SessionStart: [{ matcher: 'startup|resume|compact', hooks: [{ type: 'command', command: 'node .claude/hooks/session-recovery.js', timeout: 10 }] }],
+      PreCompact: [{ hooks: [{ type: 'command', command: 'node .claude/hooks/pre-compact.js', timeout: 10 }] }],
+      Stop: [{ hooks: [{ type: 'command', command: 'node .claude/hooks/session-stop.js', timeout: 10 }] }],
+      SubagentStart: [{ hooks: [{ type: 'command', command: 'node .claude/hooks/subagent-context.js', timeout: 10 }] }],
+    },
+  };
+
+  let settings: Record<string, unknown> = hooksConfig;
+  if (existsSync(settingsPath)) {
+    try {
+      const existing = JSON.parse(readFileSync(settingsPath, 'utf-8'));
+      settings = { ...existing, ...hooksConfig };
+    } catch { /* use fresh config */ }
+  }
+  writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+  console.log(chalk.green('  ✓ Hook registrations atualizadas em .claude/settings.json'));
+
   console.log(chalk.cyan('\n✅ Atualização concluída!\n'));
 
   return {

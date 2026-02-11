@@ -155,7 +155,44 @@ Or, if from spec:
 sedd story --from-spec --title "override title if needed"
 ```
 
-### Step 9: Confirm Result
+### Step 9: Assign Issue
+
+After creating the issue, ask:
+
+```
+Deseja atribuir a issue #42 a alguem?
+
+1. Voce ({current_user} via `gh api user --jq .login`) (Recomendado)
+2. Outro usuario
+3. Pular
+
+Escolha (1-3):
+```
+
+If user picks 1: run `gh issue edit 42 --add-assignee {current_user}`
+If user picks 2: ask for username, then run `gh issue edit 42 --add-assignee {username}`
+
+### Step 10: Move Issue on Board
+
+If GitHub project is configured, ask:
+
+```
+Para qual etapa mover a issue #42 no board?
+
+{list status options from project, numbered with emojis}
+Exemplo:
+1. 📋 Todo (Recomendado)
+2. 🔄 In Progress
+3. 👀 In Review
+4. ✅ Done
+
+Escolha (1-N):
+```
+
+Use `getStatusOptions()` to list available columns dynamically.
+Move using `moveItem()` with the selected option ID.
+
+### Step 11: Confirm Result
 
 After execution, show:
 
@@ -163,7 +200,8 @@ After execution, show:
 Issue #42 criada com sucesso!
 URL: https://github.com/owner/repo/issues/42
 
-Adicionada ao projeto "My Kanban" na coluna "Todo"
+Atribuida a: {assignee}
+Etapa no board: {column_name}
 
 Proximo passo:
 1. /sedd.specify 042 from-issue --from-issue <url>  (criar feature a partir desta story)

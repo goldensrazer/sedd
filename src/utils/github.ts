@@ -527,6 +527,31 @@ export class GitHubOperations {
   }
 
   /**
+   * Assign an issue to a user
+   */
+  assignIssue(number: number, assignee: string): boolean {
+    try {
+      execFileSync('gh', ['issue', 'edit', String(number), '--add-assignee', assignee], {
+        cwd: this.cwd,
+        encoding: 'utf-8',
+        stdio: 'pipe',
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Get status field options (board columns) for a project
+   */
+  getStatusOptions(projectId: string): Array<{ id: string; name: string }> {
+    const field = this.getStatusField(projectId);
+    if (!field || !field.options) return [];
+    return field.options;
+  }
+
+  /**
    * Download images referenced in issue body to local assets/ directory.
    * Rewrites markdown image links to relative paths.
    */

@@ -114,26 +114,28 @@ For each task in order:
 
 3. **Execute the task**
 
-4. **Mark task as completed using CLI** (CRITICAL - syncs with GitHub automatically):
+4. **Update ALL task files** (CRITICAL - keep them in sync):
 
-   ```bash
-   sedd complete T001-001
+   a. **Update tasks.md** in migration folder - change `[ ]` to `[x]`:
+   ```markdown
+   # Before
+   - [ ] T001-001 [Foundation] Create ThemeContext
+
+   # After
+   - [x] T001-001 [Foundation] Create ThemeContext
    ```
 
-   This automatically:
-   - Updates `tasks.md` (`[ ]` → `[x]`)
-   - Increments `tasksCompleted` in `_meta.json`
-   - If GitHub integration is configured:
-     - Moves the issue to "Done" on the project board
-     - Comments on the issue with progress
-     - When all tasks complete: closes the source issue
-
-   After running `sedd complete`, also update **progress.md** manually:
+   b. **Update progress.md** - mark completed with timestamp:
    ```markdown
    - [x] T001-001 [10:30 → 10:45] Create ThemeContext
    ```
 
-5. **Verify sync** - tasks.md, _meta.json and progress.md must show same completed count
+   c. **Update _meta.json** - increment tasksCompleted:
+   ```json
+   "tasksCompleted": 1
+   ```
+
+5. **Verify sync** - All three files must show same completed count
 
 ### Step 5.6: Validate Against Expectations (CRITICAL - Before Marking Done)
 
@@ -561,7 +563,22 @@ When all migrations are done and no pending tasks remain, automatically sync wit
    gh issue close {SOURCE_ISSUE_NUMBER}
    ```
 
-   c. **Move on project board** to Done (if configured and not already moved)
+   c. **Ask which stage to move on board:**
+
+   ```
+   Para qual etapa mover a issue #{SOURCE_ISSUE_NUMBER} no board?
+
+   {list status options from project, numbered with emojis}
+   Exemplo:
+   1. ✅ Done (Recomendado)
+   2. 👀 In Review
+   3. Pular
+
+   Escolha (1-N):
+   ```
+
+   Use `getStatusOptions()` to list available columns dynamically.
+   Move using `moveItem()` with the selected option ID.
 
 3. **If no `sourceIssue`:** inform the user that no source issue is linked
 
@@ -569,7 +586,7 @@ When all migrations are done and no pending tasks remain, automatically sync wit
    ```
    🔄 GitHub Sync:
       Source Issue: #42 → Closed ✅
-      Project Board: → Done ✅
+      Board: → {selected_column} ✅
    ```
 
 5. **Suggest next step:**
@@ -649,8 +666,10 @@ Stops after migration 002.
 
 ## Rules
 
-- **CRITICAL: Use `sedd complete <task-id>` to mark tasks done** (syncs tasks.md, _meta.json, and GitHub automatically)
-  - Then manually update `progress.md` with timestamps
+- **CRITICAL: Update ALL 3 files when completing a task:**
+  1. `{migration}/tasks.md` - change `[ ]` to `[x]`
+  2. `progress.md` - mark task with `[x]` and timestamps
+  3. `_meta.json` - increment tasksCompleted count
 - ONE task in-progress at a time
 - **With `--all` flag:** NO prompts between migrations, commit only at end
 - **Without flag:** Ask about commit after each migration completes
@@ -660,12 +679,11 @@ Stops after migration 002.
 
 ## File Sync Checklist
 
-After running `sedd complete T001-001`, verify:
+After completing each task, verify:
 ```
-✓ tasks.md      → - [x] T001-001 ...  (auto by sedd complete)
-✓ _meta.json    → "tasksCompleted": N  (auto by sedd complete)
-✓ progress.md   → - [x] T001-001 [time] ...  (manual update)
-✓ GitHub issue   → moved to Done column  (auto if configured)
+✓ tasks.md      → - [x] T001-001 ...
+✓ progress.md   → - [x] T001-001 [time] ...
+✓ _meta.json    → "tasksCompleted": N
 ```
 
 If files are out of sync, fix immediately before continuing.

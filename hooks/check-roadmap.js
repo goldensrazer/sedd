@@ -31,6 +31,19 @@ const STOP_WORDS = new Set([
   'that', 'this', 'from', 'as', 'when', 'if', 'then', 'so', 'do',
 ]);
 
+// T001-024: keyword→skill mapping
+const SKILL_KEYWORDS = [
+  { patterns: [/\bimplement/i, /\bexecut/i, /\bcodar/i, /\bcodific/i], skill: '/sedd.implement', desc: 'Execute Tasks' },
+  { patterns: [/\bvalid/i, /\bverific/i, /\bcheck\s+impl/i], skill: '/sedd.validate', desc: 'Validate Implementation' },
+  { patterns: [/\bestim/i, /\besfor[cç]o/i, /\beffort/i], skill: '/sedd.estimate', desc: 'Estimate Effort' },
+  { patterns: [/\bcri(ar|e)\s+(issue|story|hist[oó]ria)/i, /\bstory\b/i], skill: '/sedd.story', desc: 'Create GitHub Issue' },
+  { patterns: [/\bboard\b/i, /\bkanban\b/i, /\bquadro\b/i], skill: '/sedd.board', desc: 'View Kanban Board' },
+  { patterns: [/\bspecif/i, /\bespecif/i, /\bspec\b/i], skill: '/sedd.specify', desc: 'Create Specification' },
+  { patterns: [/\bclarif/i, /\bclaread/i, /\bclare/i], skill: '/sedd.clarify', desc: 'Clarify & Generate Tasks' },
+  { patterns: [/\btask/i, /\btarefa/i], skill: '/sedd.tasks', desc: 'Generate Tasks' },
+  { patterns: [/\bdashboard\b/i, /\bstatus\b/i, /\bpainel\b/i], skill: '/sedd.dashboard', desc: 'Status Overview' },
+];
+
 const loadConfig = (cwd) => {
   const configPath = path.join(cwd, 'sedd.config.json');
   if (!fs.existsSync(configPath)) return DEFAULT_CONFIG;
@@ -175,6 +188,17 @@ const getMustNotList = (expectation) => {
   return expectation.mustNot || [];
 };
 
+// T001-024/025: Detect skill suggestion from user prompt
+const detectSkillSuggestion = (prompt) => {
+  const lower = prompt.toLowerCase();
+  for (const entry of SKILL_KEYWORDS) {
+    if (entry.patterns.some((p) => p.test(lower))) {
+      return entry;
+    }
+  }
+  return null;
+};
+
 const buildSeddContext = (branch, currentMigration, completed, pending, featureExpectation, migrationExpectation) => {
   const featureSummary = getExpectationSummary(featureExpectation);
   const migrationSummary = getExpectationSummary(migrationExpectation);
@@ -221,18 +245,28 @@ ${restrictions}
 </sedd-context>`;
   }
 
-  const tasksList = pending.slice(0, 5).map((t) => {
+  // T001-027: Progressive disclosure - 3 detailed, rest compact
+  const DETAILED_COUNT = 3;
+  const detailedTasks = pending.slice(0, DETAILED_COUNT).map((t) => {
     const truncated = t.text.length > 60 ? `${t.text.substring(0, 60)}...` : t.text;
     return `- ${t.id}: ${truncated}`;
   }).join('\n');
 
-  const moreText = pending.length > 5 ? `\n... and ${pending.length - 5} more` : '';
+  const compactTasks = pending.slice(DETAILED_COUNT, DETAILED_COUNT + 10);
+  const compactLine = compactTasks.length > 0
+    ? `\n> Queued: ${compactTasks.map((t) => t.id).join(', ')}`
+    : '';
+
+  const remainingCount = pending.length - DETAILED_COUNT - compactTasks.length;
+  const moreText = remainingCount > 0 ? `\n... +${remainingCount} more` : '';
+
+  const tasksList = detailedTasks;
 
   return `<sedd-context>
 **Branch: ${branch}**${migrationInfo} | Progress: ${completed}/${total} tasks${scoreBlock}
 ${expectationBlock}${mustNotBlock}
 Pending tasks:
-${tasksList}${moreText}
+${tasksList}${compactLine}${moreText}
 </sedd-context>`;
 };
 
@@ -284,8 +318,22 @@ const main = () => {
       }
 
       const context = buildSeddContext(branch, currentMigration, completed, pending, featureExpectation, migrationExpectation);
-      if (context) {
-        console.log(JSON.stringify({ systemMessage: '\n' + context + '\n' }));
+
+      // T001-024/025: Detect skill suggestion from prompt
+      const skillMatch = detectSkillSuggestion(prompt);
+      let skillSuggestion = '';
+      if (skillMatch) {
+        const assertive = config.hooks?.assertive === true;
+        if (assertive) {
+          skillSuggestion = `\n<sedd-skill-hint>\nUSE ${skillMatch.skill} (${skillMatch.desc}) para esta tarefa. Execute o skill ANTES de qualquer outra acao.\n</sedd-skill-hint>`;
+        } else {
+          skillSuggestion = `\n<sedd-skill-hint>\nDica: ${skillMatch.skill} (${skillMatch.desc}) pode ser util para esta tarefa.\n</sedd-skill-hint>`;
+        }
+      }
+
+      const message = (context || '') + skillSuggestion;
+      if (message.trim()) {
+        console.log(JSON.stringify({ systemMessage: '\n' + message + '\n' }));
       }
     } catch {
       return;

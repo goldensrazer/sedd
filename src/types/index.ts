@@ -30,6 +30,7 @@ export interface GitHubConfig {
   wipLimits?: WipLimits;
   wipEnforcement?: 'warn' | 'block';
   autoSync?: AutoSync;
+  syncTasks?: 'off' | 'manual' | 'auto';
   labels?: { feature?: string; task?: string };
 }
 
@@ -97,6 +98,9 @@ export interface AutoSplitConfig {
 export interface HooksConfig {
   assertive: boolean;
   skills: string[];
+  checkOnlyCurrentMigration: boolean;
+  showSyncWarnings: boolean;
+  blockOnSyncError: boolean;
 }
 
 export interface CommitConfig {
@@ -127,6 +131,9 @@ export const DEFAULT_CONFIG: SeddConfig = {
   hooks: {
     assertive: true,
     skills: ['langchain-expert', 'architecture-mapper', 'defect-analyzer'],
+    checkOnlyCurrentMigration: true,
+    showSyncWarnings: true,
+    blockOnSyncError: false,
   },
   commit: {
     askBeforeCommit: true,
@@ -142,6 +149,7 @@ export const DEFAULT_CONFIG: SeddConfig = {
       blocked: 'Blocked',
     },
     autoSync: 'ask',
+    syncTasks: 'off',
   },
 };
 

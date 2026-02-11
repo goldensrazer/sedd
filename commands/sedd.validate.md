@@ -285,17 +285,11 @@ Próximo passo: Reverter alterações que violam restrições.
 
 ### Step 8: Create Follow-up Tasks (if gaps)
 
-If gaps found and `--auto` flag or user confirms, **use the CLI to add tasks**:
+If gaps found and `--auto` flag or user confirms:
 
-```bash
-sedd tasks '[{"story":"Follow-up","description":"Implement session persistence for theme"},{"story":"Follow-up","description":"Add session storage fallback"}]'
-```
-
-This automatically creates GitHub issues for the follow-up tasks and updates _meta.json.
-**Do NOT manually append to tasks.md** — use the CLI.
-
-The CLI will add to tasks.md:
 ```markdown
+# New tasks added to tasks.md
+
 - [ ] T001-NEW-001 [Follow-up] Implement session persistence for theme
 - [ ] T001-NEW-002 [Follow-up] Add session storage fallback
 ```
@@ -340,26 +334,51 @@ When recommendation is `"complete"` (100% coverage, 0 gaps, 0 violations):
 
    c. **If `sedd complete` cannot be used** (e.g., no pending tasks left but issue still open), sync manually:
 
+   **Generate implementation summary** from `progress.md` + `git diff --stat`:
+
    ```bash
-   # Comment on source issue with validation summary
+   # Build implementation summary from completed tasks and git diff
+   # Read progress.md to list completed tasks with descriptions
+   # Run: git diff --stat {BASE_COMMIT}..HEAD
+
+   # Comment on source issue with FULL validation + implementation summary
    gh issue comment {SOURCE_ISSUE_NUMBER} --body "✅ Feature validated via /sedd.validate
 
+   ## Resumo da Implementação
+   - {task_1_description}
+   - {task_2_description}
+   - ...
+
+   ## Métricas
    Cobertura: 100%
    Tasks: {COMPLETED}/{TOTAL} completadas
+   Arquivos: {TOTAL_FILES} alterados (+{ADDED}, -{REMOVED} linhas)
    Violações: 0
    Gaps: 0
 
+   Branch: {BRANCH}
    Validation report: .sedd/{FEATURE}/{MIGRATION}/validation.md"
 
    # Close the source issue
    gh issue close {SOURCE_ISSUE_NUMBER}
    ```
 
-   d. **Move on project board** (if configured in `sedd.config.json`):
-   ```bash
-   # Read .github-source-sync.json for the itemId
-   # Use gh api to move item to Done column
+   d. **Ask which stage to move on board:**
+
    ```
+   Para qual etapa mover a issue #{SOURCE_ISSUE_NUMBER} no board?
+
+   {list status options from project, numbered with emojis}
+   Exemplo:
+   1. ✅ Done (Recomendado)
+   2. 👀 In Review
+   3. Pular
+
+   Escolha (1-N):
+   ```
+
+   Use `getStatusOptions()` to list available columns dynamically.
+   Move using `moveItem()` with the selected option ID.
 
 3. **If no `sourceIssue` in `_meta.json`:**
    ```
@@ -372,7 +391,9 @@ When recommendation is `"complete"` (100% coverage, 0 gaps, 0 violations):
    ```
    🔄 GitHub Sync:
       Source Issue: #42 → Closed ✅
-      Project Board: → Done ✅
+      Atribuida a: {assignee}
+      Board: → {selected_column} ✅
+      Resumo: Comentado na issue ✅
    ```
 
 ## Output
