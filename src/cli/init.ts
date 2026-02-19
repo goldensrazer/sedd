@@ -172,11 +172,11 @@ export async function init(projectName?: string, options: InitOptions = {}): Pro
   const settingsPath = join(claudeDir, 'settings.json');
   const hooksConfig = {
     hooks: {
-      UserPromptSubmit: [{ hooks: [{ type: 'command', command: 'node .claude/hooks/check-roadmap.js', timeout: 10 }] }],
-      SessionStart: [{ matcher: 'startup|resume|compact', hooks: [{ type: 'command', command: 'node .claude/hooks/session-recovery.js', timeout: 10 }] }],
-      PreCompact: [{ hooks: [{ type: 'command', command: 'node .claude/hooks/pre-compact.js', timeout: 10 }] }],
-      Stop: [{ hooks: [{ type: 'command', command: 'node .claude/hooks/session-stop.js', timeout: 10 }] }],
-      SubagentStart: [{ hooks: [{ type: 'command', command: 'node .claude/hooks/subagent-context.js', timeout: 10 }] }],
+      UserPromptSubmit: [{ hooks: [{ type: 'command', command: 'node "$(git rev-parse --show-toplevel)/.claude/hooks/check-roadmap.cjs"', timeout: 10 }] }],
+      SessionStart: [{ matcher: 'startup|resume|compact', hooks: [{ type: 'command', command: 'node "$(git rev-parse --show-toplevel)/.claude/hooks/session-recovery.cjs"', timeout: 10 }] }],
+      PreCompact: [{ hooks: [{ type: 'command', command: 'node "$(git rev-parse --show-toplevel)/.claude/hooks/pre-compact.cjs"', timeout: 10 }] }],
+      Stop: [{ hooks: [{ type: 'command', command: 'node "$(git rev-parse --show-toplevel)/.claude/hooks/session-stop.cjs"', timeout: 10 }] }],
+      SubagentStart: [{ hooks: [{ type: 'command', command: 'node "$(git rev-parse --show-toplevel)/.claude/hooks/subagent-context.cjs"', timeout: 10 }] }],
     },
   };
 
