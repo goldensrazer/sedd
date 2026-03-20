@@ -8,5 +8,29 @@
   "migrations": {},
   "splits": [],
   "commits": [],
-  "expectation": null
+  "expectation": null,
+  "architectureAnalysis": {
+    "performedAt": null,
+    "filesToModify": [],
+    "filesAffected": [],
+    "dbChangesNeeded": false,
+    "apiChangesNeeded": false,
+    "reusableAssets": [],
+    "risks": [],
+    "recommendedApproach": null
+  },
+  "lastValidation": {
+    "timestamp": null,
+    "coveragePercentage": null,
+    "overallQuality": null,
+    "qualityScores": {
+      "frontend": null,
+      "backend": null,
+      "database": null,
+      "general": null
+    },
+    "qualityCriticals": 0,
+    "qualityWarnings": 0,
+    "recommendation": null
+  }
 }

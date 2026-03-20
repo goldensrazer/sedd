@@ -64,14 +64,122 @@ User runs `/sedd.clarify`
 ### Step 1: Load Context PRIMEIRO
 
 Read from feature root:
-- spec.md (especialmente `## Expectation` e user stories)
+- spec.md (especialmente `## Expectation`, `## Architecture Analysis` e user stories)
 - interfaces.ts (entidades)
 - _meta.json (expectation do specify)
 - Previous migrations (if any)
 
-### Step 1.5: Suggest Expectations (PROACTIVE)
+### Step 1.5: Architecture Deep-Dive via Sub-Agents (MANDATORY)
 
-Com base no contexto carregado, AI DEVE:
+Após carregar contexto, ANTES de sugerir expectations, lançar **sub-agents em paralelo** para investigar a arquitetura atual que será impactada pela feature. Isso garante que as clarificações são informadas pela realidade do código.
+
+**Launch ALL agents in parallel (single message, multiple Agent tool calls):**
+
+#### Agent A: Current State Mapper
+```
+Prompt: "Map the current state of the codebase for feature '{FEATURE_NAME}'.
+
+Context from spec.md:
+{paste relevant Architecture Analysis section from specify}
+
+Tasks:
+1. Read and analyze ALL files identified in the spec's impact assessment
+2. Map the current data flow for related functionality
+3. Document current API contracts (endpoints, request/response shapes)
+4. Map current database schema for affected tables/models
+5. Document current UI component tree for affected pages
+6. List current tests covering affected areas
+7. Check for recent changes (git log --oneline -20) in affected files
+
+Return:
+- Current data flow diagram (text-based)
+- API contracts that will change
+- DB schema snapshot (relevant tables only)
+- UI component hierarchy (if frontend)
+- Test coverage map
+- Recent change velocity in affected areas"
+```
+
+#### Agent B: Dependency & Integration Mapper
+```
+Prompt: "Map all dependencies and integrations that '{FEATURE_NAME}' will touch.
+
+Context from spec.md:
+{paste relevant sections}
+
+Tasks:
+1. Trace imports/exports between affected modules
+2. Identify shared state (global stores, context, caches)
+3. Map external service integrations (APIs, queues, events)
+4. Identify configuration dependencies (env vars, feature flags)
+5. Check for circular dependencies or tight coupling
+6. Map the deployment topology (monolith, microservices, serverless)
+
+Return:
+- Dependency graph (text-based, showing direction)
+- Shared state inventory
+- External integrations affected
+- Config dependencies
+- Coupling analysis (tight/loose for each connection)
+- Deployment impact (which services/functions affected)"
+```
+
+#### Agent C: Risk & Constraint Assessor
+```
+Prompt: "Assess technical risks and constraints for implementing '{FEATURE_NAME}'.
+
+Context from spec.md:
+{paste relevant sections}
+
+Tasks:
+1. Identify performance risks (N+1 queries, large payloads, slow joins)
+2. Check for security concerns (auth, authorization, data exposure)
+3. Identify scalability constraints (DB limits, rate limits, memory)
+4. Check for data migration needs (existing data transformation)
+5. Identify backwards compatibility requirements
+6. Check for feature flag or rollback needs
+7. Identify testing complexity (what's hard to test)
+
+Return:
+- Risk matrix (risk, probability, impact, mitigation)
+- Security checklist for this feature
+- Performance hotspots to watch
+- Data migration requirements
+- Backwards compatibility constraints
+- Rollback strategy needed? (yes/no + why)
+- Testing challenges"
+```
+
+#### Consolidate & Present to User
+
+After all agents complete, present a **concise synthesis** before proceeding:
+
+```
+🔍 Análise da Arquitetura Atual (via sub-agents)
+
+**Estado Atual:**
+- {key findings from Current State Mapper}
+
+**Dependências Impactadas:**
+- {count} módulos diretos, {count} indiretos
+- {key findings from Dependency Mapper}
+
+**Riscos Identificados:**
+- 🔴 Alto: {critical risks}
+- 🟡 Médio: {medium risks}
+- 🟢 Baixo: {low risks}
+
+**Constraints Técnicas:**
+- {key constraints that will shape decisions}
+
+Estas informações vão guiar nossas clarificações.
+```
+
+Save findings in `clarify.md` under `## Architecture Assessment` section (after Expected Outcome).
+
+### Step 2: Suggest Expectations (PROACTIVE, NOW INFORMED BY ARCHITECTURE)
+
+Com base no contexto carregado E nos resultados dos sub-agents, AI DEVE:
 
 1. Apresentar a expectativa original da spec:
    > "Expectativa original (da spec): {quote}"
@@ -109,7 +217,7 @@ Save in `clarify.md` under `## Expected Outcome` section (NO TOPO).
 
 **NÃO PROSSIGA** sem a expectativa do usuário confirmada.
 
-### Step 2: Detail MUST and MUST NOT (STRUCTURED EXPECTATION)
+### Step 3: Detail MUST and MUST NOT (STRUCTURED EXPECTATION)
 
 Após consolidar as expectativas (originais + sugeridas + usuario), detalhar com regras claras:
 
@@ -152,7 +260,7 @@ Save in `clarify.md` under `## Expectation Details`:
 }
 ```
 
-### Step 3: Create New Migration Folder
+### Step 4: Create New Migration Folder
 
 Generate new migration folder:
 
@@ -191,7 +299,7 @@ Initialize clarify.md:
 
 ```
 
-### Step 4: Start Interactive Session
+### Step 5: Start Interactive Session
 
 Present the clarification session with available commands:
 
@@ -214,11 +322,11 @@ Digite um comando para controlar o fluxo:
 Como você quer começar?
 ```
 
-### Step 5: Flexible Discussion Loop
+### Step 6: Flexible Discussion Loop
 
 The AI responds based on user input:
 
-#### 5.1 User Explains/Discusses (Default Mode)
+#### 6.1 User Explains/Discusses (Default Mode)
 
 When user provides information (not a command):
 
@@ -270,7 +378,7 @@ Digite um comando:
   tasks     → Gerar tasks e finalizar
 ```
 
-#### 5.2 User Says "continue"
+#### 6.2 User Says "continue"
 
 Keep in discussion mode:
 
@@ -278,7 +386,7 @@ Keep in discussion mode:
 Ok, continue explicando...
 ```
 
-#### 5.3 User Says "pergunte"
+#### 6.3 User Says "pergunte"
 
 AI analyzes gaps and asks ONE clarification question:
 
@@ -303,11 +411,11 @@ Sua resposta (ou continue explicando):
 
 After user answers, update clarify.md and decisions.md immediately.
 
-#### 5.4 User Says "tasks"
+#### 6.4 User Says "tasks"
 
-Proceed to Step 6 (Generate Tasks).
+Proceed to Step 7 (Generate Tasks).
 
-### Step 6: Generate tasks.md (After All Q&A Complete)
+### Step 7: Generate tasks.md (After All Q&A Complete)
 
 Ao gerar tasks, VARRER clarify.md por TODOS os `[TASK_SOURCE:*]` tags:
 - Cada tag com tipo `user-req` → task obrigatoria
@@ -316,20 +424,7 @@ Ao gerar tasks, VARRER clarify.md por TODOS os `[TASK_SOURCE:*]` tags:
 - Cada tag com tipo `edge-case` → task de validacao/protecao
 - Cada tag com tipo `constraint` → task de teste negativo
 
-Based on all decisions and TASK_SOURCE tags, **use the CLI to add tasks**:
-
-```bash
-sedd tasks '[{"story":"Foundation","description":"Create ThemeContext in src/contexts/ThemeContext.tsx"},{"story":"Foundation","description":"Add theme column to users table prisma/schema.prisma"},{"story":"US1","description":"Create ThemeToggle component src/components/ThemeToggle.tsx"},{"story":"US1","description":"Add toggle to settings page src/pages/settings.tsx"},{"story":"US1","description":"Implement theme API endpoint src/api/user/theme.ts"}]'
-```
-
-This automatically:
-- Appends tasks to `tasks.md` with correct IDs (T001-001, T001-002...)
-- Updates `_meta.json` (tasksTotal, status → in-progress)
-- Creates GitHub issues for each task (if GitHub integration is configured)
-
-**Do NOT manually write tasks.md** — the CLI handles file creation and GitHub sync.
-
-The CLI generates `tasks.md` with this structure:
+Based on all decisions and TASK_SOURCE tags, create tasks:
 
 ```markdown
 # Tasks - Migration 001
@@ -348,22 +443,18 @@ Total: 5 | Completed: 0 | Pending: 5
 - [ ] T001-003 [US1] Create ThemeToggle component `src/components/ThemeToggle.tsx`
 - [ ] T001-004 [US1] Add toggle to settings page `src/pages/settings.tsx`
 - [ ] T001-005 [US1] Implement theme API endpoint `src/api/user/theme.ts`
-```
 
-After adding tasks via CLI, manually add the `## Dependencies` section to tasks.md:
-
-```markdown
 ## Dependencies
 
 T001-001, T001-002 → T001-003 → T001-004
                    → T001-005
 ```
 
-### Step 6.5: Generate Acceptance Criteria (NEW)
+### Step 7.5: Generate Acceptance Criteria
 
 Após gerar tasks, criar critérios de aceite baseados na expectativa:
 
-#### 6.5.1 Transformar Expectativa em Critérios
+#### 7.5.1 Transformar Expectativa em Critérios
 
 Regras de geração:
 
@@ -394,11 +485,11 @@ Critérios gerados:
   - Verificar: Fechar browser, reabrir, tema permanece
 ```
 
-#### 6.5.2 Criar acceptance.md
+#### 7.5.2 Criar acceptance.md
 
 Escrever em `{migration_folder}/acceptance.md` usando template.
 
-#### 6.5.3 Linkar em tasks.md
+#### 7.5.3 Linkar em tasks.md
 
 Adicionar ao final de tasks.md:
 ```markdown
@@ -409,11 +500,11 @@ Adicionar ao final de tasks.md:
 Ver `acceptance.md` para checklist de verificação.
 ```
 
-### Step 7: Expectation Alignment Check + Score
+### Step 8: Expectation Alignment Check + Score
 
 Após gerar tasks E acceptance criteria, calcular score de alinhamento:
 
-#### 7.1 Extrair Keywords da Expectativa
+#### 8.1 Extrair Keywords da Expectativa
 
 ```
 PASSO 1: Tokenizar expectativa
@@ -431,18 +522,18 @@ Tokens: {toggle: 3, dark: 1, mode: 2, settings: 2, persist: 3, sessions: 1}
 Total: 12
 ```
 
-#### 7.2 Verificar Cobertura nas Tasks
+#### 8.2 Verificar Cobertura nas Tasks
 
 Para cada token, buscar nas descrições das tasks geradas.
 
-#### 7.3 Calcular Score
+#### 8.3 Calcular Score
 
 ```
 matched_weight = soma dos pesos dos tokens encontrados
 score = (matched_weight / total_weight) * 100
 ```
 
-#### 7.4 Exibir Resultado
+#### 8.4 Exibir Resultado
 
 **Se coverage >= 80%:**
 ```
@@ -507,7 +598,7 @@ Score: 11/12 = 92%
 O que deseja fazer?
 ```
 
-#### 7.5 Se Usuário Escolhe Adicionar Tasks
+#### 8.5 Se Usuário Escolhe Adicionar Tasks
 
 Voltar ao modo discussão:
 ```
@@ -518,7 +609,7 @@ Faltando: "persist", "sessions"
 Como você imagina a persistência funcionando?
 ```
 
-### Step 8: Update _meta.json
+### Step 9: Update _meta.json
 
 ```json
 {
@@ -548,7 +639,7 @@ Como você imagina a persistência funcionando?
 }
 ```
 
-### Step 9: Update CHANGELOG.md
+### Step 10: Update CHANGELOG.md
 
 ```markdown
 ## [2026-01-11] - Migration 001
@@ -559,7 +650,7 @@ Como você imagina a persistência funcionando?
 - Areas covered: Persistence, API, UI
 ```
 
-### Step 10: Ask About Commit
+### Step 11: Ask About Commit
 
 ```
 Migration 001 completed with 5 tasks!
@@ -568,7 +659,7 @@ Do you want to commit?
 Message: "docs(024): migration 001 - clarify requirements and generate tasks"
 ```
 
-### Step 11: Offer Next Steps
+### Step 12: Offer Next Steps
 
 ```
 What would you like to do?
@@ -605,6 +696,8 @@ Parent references allow tracking the evolution:
 ## Rules
 
 - **NEVER EXECUTE CODE** - Design phase only
+- **ALWAYS LAUNCH SUB-AGENTS** before starting discussion - architecture analysis is MANDATORY
+- **ALL SUB-AGENTS IN PARALLEL** - Launch all 3 agents in a single message
 - **FLEXIBLE DISCUSSION** - User controls the flow with inline commands
 - **UPDATE FILES IMMEDIATELY** - After each user input
 - **RECOGNIZE INLINE COMMANDS:**
@@ -615,14 +708,32 @@ Parent references allow tracking the evolution:
 - Task IDs include migration ID (T001-XXX)
 - Each clarify = new migration folder
 - Auto-split files > 400 lines
+- Sub-agent results INFORM expectations and questions (not just decorative)
 
 ## Flow Summary
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  User runs /sedd.clarify                                    │
-│  → AI creates migration folder                              │
-│  → AI shows available commands                              │
+│  → AI loads context (spec, interfaces, _meta, migrations)   │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│  SUB-AGENTS (parallel)                                      │
+│                                                             │
+│  Agent A: Current State Mapper                              │
+│  Agent B: Dependency & Integration Mapper                   │
+│  Agent C: Risk & Constraint Assessor                        │
+│                                                             │
+│  → Consolidate findings → Present to user                   │
+│  → Save in clarify.md under ## Architecture Assessment      │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│  EXPECTATIONS (informed by architecture analysis)           │
+│  → AI suggests DEVE/NAO DEVE based on real codebase state   │
+│  → User confirms/adjusts                                    │
+│  → Create migration folder                                  │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -631,7 +742,7 @@ Parent references allow tracking the evolution:
 │  User explains → AI records in clarify.md + decisions.md    │
 │       ↓                                                     │
 │  "continue" → AI: "Ok, continue..."                         │
-│  "pergunte" → AI asks ONE question                          │
+│  "pergunte" → AI asks ONE question (informed by arch data)  │
 │  "tasks"    → Exit loop, generate tasks                     │
 └─────────────────────────────────────────────────────────────┘
                               ↓
@@ -673,16 +784,12 @@ sedd status
 When `--from-issue` is provided:
 
 1. Fetches issue title and body from GitHub
-2. **Downloads images** from the issue body to `{migration}/assets/` and rewrites links to relative paths (e.g. `./assets/image-001.png`), so the AI can see the visual content via Read tool
-3. Pre-populates `clarify.md` with:
-   - `## Context (from GitHub Issue #N)` containing the issue body (with local image paths)
+2. Pre-populates `clarify.md` with:
+   - `## Context (from GitHub Issue #N)` containing the issue body
    - `## Expected Outcome` set to the issue title
-4. Links migration to the issue in `.github-sync.json`
-5. Comments on the issue: "SEDD migration {id} started from this issue"
+3. Links migration to the issue in `.github-sync.json`
+4. Comments on the issue: "SEDD migration {id} started from this issue"
 
-Supported image formats: `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg`, and any `github.com/user-attachments` URL.
-If a download fails, the original URL link is kept.
-
-**Requires:** `gh` CLI installed and authenticated. GitHub integration (`sedd github setup`) needed for board/comment features.
+**Requires:** GitHub integration configured (`sedd github setup`)
 
 Scripts also available in `.sedd/scripts/powershell/` and `.sedd/scripts/bash/`.

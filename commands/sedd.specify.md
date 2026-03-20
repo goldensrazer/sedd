@@ -61,18 +61,104 @@ Save expectation in:
 
 **NÃO PROSSIGA** sem a expectativa do usuário.
 
-### Step 3: Architecture Analysis (MANDATORY)
+### Step 3: Deep Architecture Analysis via Sub-Agents (MANDATORY)
 
-Before creating spec, MUST search for related implementations:
+Before creating spec, MUST delegate architecture investigation to **parallel sub-agents** using the Agent tool. This is NOT a superficial search — it's a deep, multi-angle analysis.
 
+**Launch ALL 3 agents in parallel (single message, multiple Agent tool calls):**
+
+#### Agent 1: Architecture Scout
 ```
-Find similar:
-- Existing specs in {{specsDir}}/
-- Related code patterns
-- Reusable components
+Prompt: "Analyze the current codebase architecture for implementing '{FEATURE_DESCRIPTION}'.
+
+Tasks:
+1. Map the project structure (frameworks, patterns, layers)
+2. Identify existing modules/packages that relate to this feature
+3. Find existing specs in {specsDir}/ that overlap or relate
+4. Document the tech stack relevant to this feature (DB, API, UI, etc.)
+5. List architectural patterns in use (MVC, DDD, repository, etc.)
+6. Identify entry points where this feature would integrate
+
+Return a structured report with:
+- Project architecture overview (relevant layers only)
+- Related existing modules with file paths
+- Patterns and conventions already in use
+- Integration points for the new feature"
 ```
 
-Document findings in spec.md.
+#### Agent 2: Impact Analyzer
+```
+Prompt: "Perform impact analysis for adding '{FEATURE_DESCRIPTION}' to this codebase.
+
+Tasks:
+1. Search for files/modules that will need modification
+2. Identify shared dependencies that could be affected
+3. Map database schemas/models that relate to this feature
+4. Find API endpoints/routes that might need changes
+5. Check for configuration files that need updates
+6. Identify test files that will need new tests or modifications
+7. Look for CI/CD or build configs that might be impacted
+
+Return a structured report with:
+- Files that WILL be modified (with reasons)
+- Files that MIGHT be affected (indirect impact)
+- Database/schema changes needed
+- API surface changes
+- Config changes required
+- Test coverage gaps"
+```
+
+#### Agent 3: Pattern & Reuse Discovery
+```
+Prompt: "Find reusable code, patterns, and similar implementations for '{FEATURE_DESCRIPTION}'.
+
+Tasks:
+1. Search for similar features already implemented in this codebase
+2. Find reusable components, utilities, hooks, helpers
+3. Identify shared services or libraries that can be leveraged
+4. Look for existing TypeScript types/interfaces that can be extended
+5. Check for design patterns that should be followed for consistency
+6. Find any anti-patterns or tech debt in related areas
+
+Return a structured report with:
+- Similar implementations found (with file paths and descriptions)
+- Reusable code inventory (components, utils, hooks, services)
+- Types/interfaces that can be extended
+- Patterns to follow (with examples from codebase)
+- Anti-patterns or tech debt to be aware of
+- Recommendations for implementation approach"
+```
+
+#### Consolidate Findings
+
+After all 3 agents complete, **synthesize their reports** into the spec:
+
+```markdown
+## Architecture Analysis
+
+### Current Architecture (Relevant)
+{from Architecture Scout}
+
+### Impact Assessment
+**Files to modify:** {count}
+**Files potentially affected:** {count}
+**DB changes needed:** {yes/no + details}
+**API changes needed:** {yes/no + details}
+
+### Reusable Assets
+{from Pattern Discovery - components, utils, types that can be leveraged}
+
+### Patterns to Follow
+{conventions and patterns already used in codebase}
+
+### Risks & Tech Debt
+{anti-patterns, known issues in related areas}
+
+### Recommended Approach
+{synthesized recommendation based on all 3 reports}
+```
+
+Document ALL findings in spec.md under `## Architecture Analysis` section.
 
 ### Step 4: Create Feature Structure
 
@@ -175,12 +261,14 @@ Would you like to proceed with clarification?
 
 ## Rules
 
-- NEVER create spec without architecture analysis
+- NEVER create spec without deep architecture analysis via sub-agents
+- ALWAYS launch all 3 analysis agents in PARALLEL (single message)
 - ALWAYS create interfaces.ts
 - ALWAYS create ASCII mockups for UI features
 - Mark unclear items as NEEDS_CLARIFICATION
 - Auto-split files > 400 lines
 - No migrations created yet (happens in /sedd.clarify)
+- Sub-agent results must be SYNTHESIZED, not just concatenated
 
 ## CLI Alternative
 
@@ -216,14 +304,10 @@ When `--from-issue` is provided:
 2. Uses issue title as feature name (if feature-name is `from-issue` or `_`)
 3. Extracts acceptance criteria from issue body (if present)
 4. Creates branch, spec.md, interfaces.ts, _meta.json
-5. **Downloads images** from the issue body to `assets/` and rewrites links to relative paths (e.g. `./assets/image-001.png`), so the AI can see the visual content via Read tool
-6. Saves `sourceIssue` in `_meta.json` (permanent link)
-7. Moves issue to "In Progress" on the GitHub project board
-8. Comments on the issue: "SEDD feature created from this issue"
+5. Saves `sourceIssue` in `_meta.json` (permanent link)
+6. Moves issue to "In Progress" on the GitHub project board
+7. Comments on the issue: "SEDD feature created from this issue"
 
-Supported image formats: `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg`, and any `github.com/user-attachments` URL.
-If a download fails, the original URL link is kept.
-
-**Requires:** `gh` CLI installed and authenticated. GitHub integration (`sedd github setup`) needed for board/comment features.
+**Requires:** GitHub integration configured (`sedd github setup`)
 
 Scripts also available in `.sedd/scripts/powershell/sedd-specify.ps1` and `.sedd/scripts/bash/sedd-specify.sh`.
