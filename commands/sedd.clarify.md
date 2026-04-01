@@ -64,10 +64,12 @@ User runs `/sedd.clarify`
 ### Step 1: Load Context PRIMEIRO
 
 Read from feature root:
-- spec.md (especialmente `## Expectation`, `## Architecture Analysis` e user stories)
+- spec.md (especialmente `## Expectation`, `## Architecture Analysis`, `## Architecture Contract` e user stories)
 - interfaces.ts (entidades)
-- _meta.json (expectation do specify)
+- _meta.json (expectation do specify + `architectureContract`)
 - Previous migrations (if any)
+
+**CRITICAL:** Load `architectureContract` from `_meta.json`. This contract is IMMUTABLE — all tasks generated, decisions taken, and expectations set MUST respect the contract bindings (tech stack, patterns, locations, shared contracts). If a user suggestion violates the contract, flag it immediately.
 
 ### Step 1.5: Architecture Deep-Dive via Sub-Agents (MANDATORY)
 
@@ -650,16 +652,7 @@ Como você imagina a persistência funcionando?
 - Areas covered: Persistence, API, UI
 ```
 
-### Step 11: Ask About Commit
-
-```
-Migration 001 completed with 5 tasks!
-
-Do you want to commit?
-Message: "docs(024): migration 001 - clarify requirements and generate tasks"
-```
-
-### Step 12: Offer Next Steps
+### Step 11: Offer Next Steps
 
 ```
 What would you like to do?
@@ -695,6 +688,7 @@ Parent references allow tracking the evolution:
 
 ## Rules
 
+- **NUNCA fazer commit nem push** — o usuário controla quando commitar
 - **NEVER EXECUTE CODE** - Design phase only
 - **ALWAYS LAUNCH SUB-AGENTS** before starting discussion - architecture analysis is MANDATORY
 - **ALL SUB-AGENTS IN PARALLEL** - Launch all 3 agents in a single message
@@ -709,6 +703,8 @@ Parent references allow tracking the evolution:
 - Each clarify = new migration folder
 - Auto-split files > 400 lines
 - Sub-agent results INFORM expectations and questions (not just decorative)
+- **ALWAYS load and respect Architecture Contract** from `_meta.json` — tasks MUST follow contract bindings
+- If user suggestion violates Architecture Contract → flag immediately and explain why
 
 ## Flow Summary
 

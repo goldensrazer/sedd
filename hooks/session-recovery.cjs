@@ -19,6 +19,7 @@ const SEDD_SKILLS = [
   '/sedd.estimate - Estimate Effort',
   '/sedd.story - Create GitHub Issue',
   '/sedd.board - View Kanban Board',
+  '/sedd.report - Generate Feature Report (HTML + PDF)',
   '/sedd.dashboard - Status Overview',
 ];
 
@@ -48,7 +49,7 @@ const findFeatureDir = (cwd, specsDir, branch) => {
 
 const buildSkillsBlock = () => {
   const skills = SEDD_SKILLS.map(s => `  ${s}`).join('\n');
-  return `<sedd-skills>\nSkills SEDD disponiveis neste projeto:\n${skills}\nUse-as SEMPRE que a tarefa se encaixar.\n</sedd-skills>`;
+  return `<sedd-skills>\nSkills SEDD disponiveis neste projeto:\n${skills}\nUse-as SEMPRE que a tarefa se encaixar.\nREGRA CRITICA: NUNCA fazer commit, push, ou sugerir commit/push. NUNCA sugerir parar por ter muitas mudancas. O usuario controla o git e decide quando parar.\n</sedd-skills>`;
 };
 
 const buildRecoveryBlock = (contextData, branch) => {

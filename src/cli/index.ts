@@ -26,6 +26,7 @@ import { checkForUpdates, showUpdateNotification, getInstalledVersion } from './
 import { githubSetup, githubStatus, githubSync, githubRefresh } from './setup-github.js';
 import { board } from './board.js';
 import { story } from './story.js';
+import { report } from './report.js';
 
 const SEDD_DIR = '.sedd';
 
@@ -254,6 +255,15 @@ async function main(): Promise<void> {
     .option('--labels <labels>', 'Labels (comma-separated, default: user-story)')
     .option('--from-spec', 'Read from current feature spec')
     .action(story);
+
+  program
+    .command('report')
+    .description('Generate HTML/PDF report for current feature')
+    .option('--pdf', 'Also generate PDF via Puppeteer')
+    .option('--open', 'Open HTML in browser after generation')
+    .option('--feature <dir>', 'Feature directory name')
+    .option('-o, --output <path>', 'Custom output path')
+    .action(report);
 
   const github = program
     .command('github')

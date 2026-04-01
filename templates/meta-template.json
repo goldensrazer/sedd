@@ -19,6 +19,13 @@
     "risks": [],
     "recommendedApproach": null
   },
+  "architectureContract": {
+    "confirmedAt": null,
+    "techStack": {},
+    "patternBindings": [],
+    "locationBindings": [],
+    "sharedContracts": []
+  },
   "lastValidation": {
     "timestamp": null,
     "coveragePercentage": null,

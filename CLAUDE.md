@@ -18,7 +18,15 @@ Always use the appropriate skill when the task matches:
 | `/sedd.estimate` | Estimating effort for tasks or features |
 | `/sedd.story` | Creating a GitHub Issue as user story |
 | `/sedd.board` | Viewing the Kanban board |
+| `/sedd.report` | Generating HTML/PDF feature report |
 | `/sedd.dashboard` | Status overview of clarifications |
+
+## CRITICAL RULES
+
+- **NUNCA fazer commit nem push** — o usuário controla o git, decide quando commitar e quando fazer push
+- **NUNCA sugerir parar** por ter "muitas mudanças", "muitos arquivos", ou "sessão longa" — o usuário decide quando parar
+- **NUNCA perguntar** "quer commitar?", "quer ver amanhã?", "já temos bastante coisa" — apenas continue trabalhando
+- **Architecture Contract é IMUTÁVEL** — respeitar tech stack, patterns, locations e shared contracts definidos no `/sedd.specify`
 
 ## Conventions
 
@@ -42,6 +50,14 @@ Always use the appropriate skill when the task matches:
 - `src/core/` - Core logic (board-manager, etc.)
 - `src/utils/` - Utilities (github.ts, etc.)
 - `src/types/` - TypeScript type definitions
-- `.claude/commands/` - Skill templates (markdown)
-- `.claude/hooks/` - Claude Code hooks (JS)
-- `.sedd/` - Feature specs and templates
+- `.claude/commands/` - Skill templates (local, markdown)
+- `.claude/hooks/` - Claude Code hooks (local, JS)
+- `.sedd/templates/` - User-facing templates (local copy)
+- `commands/` - Skill templates (distributable, npm package)
+- `hooks/` - Claude Code hooks (distributable, npm package)
+- `templates/` - User-facing templates (distributable, npm package)
+
+**IMPORTANT:** When editing commands, hooks, or templates, always keep ALL copies in sync:
+- Commands: `.claude/commands/` ↔ `commands/`
+- Hooks: `.claude/hooks/` ↔ `hooks/`
+- Templates: `.sedd/templates/` ↔ `templates/`

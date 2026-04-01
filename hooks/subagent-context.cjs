@@ -63,6 +63,7 @@ const main = () => {
       const lines = [
         '<sedd-context>',
         `Branch: ${branch} | Migration: ${migrationId || 'none'}`,
+        'REGRA: NUNCA fazer commit, push, ou sugerir commit/push. O usuario controla o git.',
       ];
 
       if (exp) lines.push(`EXPECTATIVA: ${exp}`);

@@ -44,12 +44,20 @@ Based on argument:
 ### Step 2: Load Context
 
 Read all relevant files:
-- spec.md (reference)
+- spec.md (reference, including `## Architecture Contract`)
 - interfaces.ts (for Zod conversion)
+- _meta.json (including `architectureContract`)
 - All relevant migration folders:
   - `XXX_timestamp/clarify.md`
   - `XXX_timestamp/tasks.md`
   - `XXX_timestamp/decisions.md`
+
+**CRITICAL:** Load `architectureContract` from `_meta.json`. When implementing tasks:
+- Create hooks in the location specified by the contract (e.g., `src/hooks/`)
+- Use the specified tech stack (e.g., TanStack Query, not Redux)
+- Put schemas in the shared location (e.g., `packages/schemas/`)
+- Use the SAME contract/schema package for frontend AND backend
+- NEVER create code in locations marked as `neverIn` in the contract
 
 ### Step 3: Create/Update Progress File
 
@@ -495,14 +503,7 @@ Sua expectativa foi atendida? [Y/n/parcial]
 
 Se "parcial", perguntar o que faltou e sugerir nova migration.
 
-### Step 8: Ask About Commit
-
-```
-Do you want to commit?
-Message: "feat(024): implement migration 001"
-```
-
-### Step 9: Update Changelog
+### Step 8: Update Changelog
 
 After completing a migration:
 
@@ -515,11 +516,10 @@ After completing a migration:
 - Added settings toggle
 ```
 
-### Step 10: Continue or Stop
+### Step 9: Continue or Stop
 
 **If `--all` or `-a` flag:**
 - Do NOT ask, continue automatically
-- Only ask about commit at the very end (all migrations done)
 - Show progress summary between migrations:
   ```
   ✅ Migration 001 complete (5/5 tasks)
@@ -539,7 +539,7 @@ Continue with migration 002? [Y/n]
 
 If user specified a migration ID, stop after that migration.
 
-### Step 11: GitHub Sync (when ALL tasks complete)
+### Step 10: GitHub Sync (when ALL tasks complete)
 
 When all migrations are done and no pending tasks remain, automatically sync with GitHub:
 
@@ -666,16 +666,17 @@ Stops after migration 002.
 
 ## Rules
 
+- **NUNCA fazer commit nem push** — o usuário controla quando commitar
 - **CRITICAL: Update ALL 3 files when completing a task:**
   1. `{migration}/tasks.md` - change `[ ]` to `[x]`
   2. `progress.md` - mark task with `[x]` and timestamps
   3. `_meta.json` - increment tasksCompleted count
 - ONE task in-progress at a time
-- **With `--all` flag:** NO prompts between migrations, commit only at end
-- **Without flag:** Ask about commit after each migration completes
+- **With `--all` flag:** NO prompts between migrations
 - Convert interfaces to Zod on first run
 - Update CHANGELOG after each migration
 - Auto-split files > 400 lines
+- **ALWAYS respect Architecture Contract** — create files in contract-specified locations, use contract-specified tech stack, use shared contract packages for FE+BE
 
 ## File Sync Checklist
 

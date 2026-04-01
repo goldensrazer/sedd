@@ -13,8 +13,9 @@
     "showSyncWarnings": true,
     "blockOnSyncError": false
   },
-  "commit": {
-    "askBeforeCommit": true,
+  "git": {
+    "autoCommit": false,
+    "autoPush": false,
     "messagePattern": "{{type}}({{id}}): {{message}}"
   }
 }

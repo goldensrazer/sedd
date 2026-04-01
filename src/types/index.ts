@@ -103,8 +103,9 @@ export interface HooksConfig {
   blockOnSyncError: boolean;
 }
 
-export interface CommitConfig {
-  askBeforeCommit: boolean;
+export interface GitConfig {
+  autoCommit: boolean;
+  autoPush: boolean;
   messagePattern: string;
 }
 
@@ -116,7 +117,7 @@ export interface SeddConfig {
   scriptRunner: ScriptRunner;
   autoSplit: AutoSplitConfig;
   hooks: HooksConfig;
-  commit: CommitConfig;
+  git: GitConfig;
   github?: GitHubConfig;
 }
 
@@ -135,8 +136,9 @@ export const DEFAULT_CONFIG: SeddConfig = {
     showSyncWarnings: true,
     blockOnSyncError: false,
   },
-  commit: {
-    askBeforeCommit: true,
+  git: {
+    autoCommit: false,
+    autoPush: false,
     messagePattern: '{{type}}({{id}}): {{message}}',
   },
   github: {

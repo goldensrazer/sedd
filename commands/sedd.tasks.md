@@ -75,21 +75,9 @@ T002-001 = Migration 002, Task 1
 | Integration | External services |
 | Tests | Unit, integration tests |
 
-### Step 5: Add tasks via CLI
+### Step 5: Write tasks.md
 
-**CRITICAL:** Use the `sedd tasks` CLI command to add tasks. This automatically:
-- Appends tasks to `tasks.md` with correct IDs
-- Updates `_meta.json` (tasksTotal, status)
-- Creates GitHub issues for each task (if GitHub integration is configured)
-- Checks WIP limits on the board
-
-```bash
-sedd tasks '[{"story":"Foundation","description":"Create database migration for new tables"},{"story":"Foundation","description":"Set up API route structure"},{"story":"US1","description":"Create ThemeContext with localStorage persistence"},{"story":"US1","description":"Build ThemeToggle component"},{"story":"US1","description":"Add toggle to settings page"},{"story":"US2","description":"Create user preference API endpoint"},{"story":"US2","description":"Implement cross-device sync"},{"story":"Tests","description":"Write unit tests for ThemeContext"}]'
-```
-
-**Do NOT manually edit tasks.md or _meta.json** — the CLI handles both and syncs with GitHub.
-
-The CLI generates `tasks.md` with this structure:
+Append to `{currentMigration}/tasks.md`:
 
 ```markdown
 # Tasks - Migration 001
@@ -118,11 +106,7 @@ Total: 8 | Completed: 0 | Pending: 8
 
 ### Tests
 - [ ] T001-008 [Tests] Write unit tests for ThemeContext
-```
 
-After adding tasks via CLI, manually add the `## Dependencies` section to tasks.md:
-
-```markdown
 ## Dependencies
 
 T001-001, T001-002 → T001-003 → T001-004 → T001-005
@@ -131,8 +115,6 @@ T001-003 → T001-008
 ```
 
 ### Step 6: Update _meta.json
-
-The CLI also updates `_meta.json` automatically:
 
 ```json
 {
@@ -144,15 +126,6 @@ The CLI also updates `_meta.json` automatically:
     }
   }
 }
-```
-
-### Step 7: Ask About Commit
-
-```
-Tasks generated! 8 tasks in migration 001.
-
-Do you want to commit?
-Message: "docs(024): add tasks for migration 001"
 ```
 
 ## Task Format
@@ -170,6 +143,7 @@ Examples:
 
 ## Rules
 
+- **NUNCA fazer commit nem push** — o usuário controla quando commitar
 - Tasks MUST have migration prefix (T001-XXX)
 - Tasks MUST have category in brackets
 - File paths are optional but recommended

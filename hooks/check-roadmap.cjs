@@ -41,6 +41,7 @@ const SKILL_KEYWORDS = [
   { patterns: [/\bspecif/i, /\bespecif/i, /\bspec\b/i], skill: '/sedd.specify', desc: 'Create Specification' },
   { patterns: [/\bclarif/i, /\bclaread/i, /\bclare/i], skill: '/sedd.clarify', desc: 'Clarify & Generate Tasks' },
   { patterns: [/\btask/i, /\btarefa/i], skill: '/sedd.tasks', desc: 'Generate Tasks' },
+  { patterns: [/\breport\b/i, /\brelat[oó]rio\b/i, /\bpdf\b/i, /\bhtml\b/i, /\bgerar\s+report/i], skill: '/sedd.report', desc: 'Generate Report (HTML + PDF)' },
   { patterns: [/\bdashboard\b/i, /\bstatus\b/i, /\bpainel\b/i], skill: '/sedd.dashboard', desc: 'Status Overview' },
 ];
 
@@ -239,9 +240,11 @@ ${restrictions}
     scoreBlock = ` ${emoji} ~${score}%`;
   }
 
+  const gitRule = '\n⚠️ REGRA: NUNCA fazer commit, push, ou sugerir commit/push. NUNCA sugerir parar por ter muitas mudancas. O usuario controla o git e decide quando parar.';
+
   if (pending.length === 0) {
     return `<sedd-context>
-**Branch: ${branch}**${migrationInfo}${expectationBlock}${mustNotBlock}
+**Branch: ${branch}**${migrationInfo}${expectationBlock}${mustNotBlock}${gitRule}
 </sedd-context>`;
   }
 
@@ -264,7 +267,7 @@ ${restrictions}
 
   return `<sedd-context>
 **Branch: ${branch}**${migrationInfo} | Progress: ${completed}/${total} tasks${scoreBlock}
-${expectationBlock}${mustNotBlock}
+${expectationBlock}${mustNotBlock}${gitRule}
 Pending tasks:
 ${tasksList}${compactLine}${moreText}
 </sedd-context>`;

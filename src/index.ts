@@ -14,7 +14,7 @@ export type {
   SeddConfig,
   AutoSplitConfig,
   HooksConfig,
-  CommitConfig,
+  GitConfig,
   CommitInfo,
   SplitInfo,
   TaskEngine,

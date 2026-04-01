@@ -97,6 +97,45 @@ Brief description of what this feature does and why it's needed.
 
 ---
 
+## Architecture Contract
+
+> **IMMUTABLE** — This contract is binding for all migrations, tasks, and implementations.
+> Changes require explicit user approval and re-confirmation.
+
+### Tech Stack Bindings
+
+| Camada | Tecnologia | Localização | Exemplo |
+|--------|-----------|-------------|---------|
+| State Management | [detected from codebase] | [path] | [example file] |
+| Forms | [detected] | [path] | [example] |
+| Validation | [detected] | [path] | [example] |
+| API Client | [detected] | [path] | [example] |
+| ORM/DB | [detected] | [path] | [example] |
+| Testing | [detected] | [path] | [example] |
+
+### Pattern Bindings
+
+| Padrão | Onde Usar | Referência no Código |
+|--------|----------|---------------------|
+| [pattern] | [usage context] | [file path example] |
+
+### Location Bindings
+
+| Tipo de Código | DEVE ficar em | NUNCA criar em |
+|----------------|---------------|----------------|
+| [code type] | [correct location] | [forbidden location] |
+
+### Shared Contracts (FE ↔ BE)
+
+| Contrato | Localização | Usado por |
+|----------|-------------|-----------|
+| [contract name] | [shared path] | FE + BE |
+
+> **Note:** This contract was confirmed by the user during `/sedd.specify`.
+> Full contract data is stored in `_meta.json` under `architectureContract`.
+
+---
+
 ## Key Entities
 
 ```

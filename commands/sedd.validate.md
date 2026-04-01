@@ -84,6 +84,36 @@ For each expectation item in `must[]`:
 }
 ```
 
+### Step 4.5: Validate Architecture Contract Compliance
+
+Load `architectureContract` from `_meta.json` and verify ALL changed files respect it:
+
+```typescript
+// For each changed file, check:
+// 1. Is it in the correct location per locationBindings?
+// 2. Does it use the correct tech per techStack?
+// 3. Are shared contracts used instead of duplicated types?
+
+const contractViolations = [];
+
+// Example checks:
+// - Hook created inside components/ instead of src/hooks/ → VIOLATION
+// - Zod schema duplicated in FE and BE instead of shared package → VIOLATION
+// - Using Redux when contract says TanStack Query → VIOLATION
+// - API types defined locally instead of packages/schemas/api/ → VIOLATION
+```
+
+Report contract violations alongside mustNot violations:
+
+```
+📜 Architecture Contract Compliance:
+  ✅ Tech Stack: All bindings respected
+  ❌ Location: Hook created in src/components/useTheme.ts (should be src/hooks/)
+  ✅ Shared Contracts: Using packages/schemas/ correctly
+```
+
+Contract violations have severity `critical` — they block `complete` recommendation.
+
 ### Step 5: Check Violations
 
 For each item in `mustNot[]`:
@@ -460,16 +490,64 @@ Próximo passo: Reverter alterações que violam restrições.
 {{/each}}
 ```
 
-### Step 8: Create Follow-up Tasks (if gaps)
+### Step 8: Auto-Create Migration for Gaps (if gaps or quality issues)
 
-If gaps found and `--auto` flag or user confirms:
+When gaps are found OR quality issues need follow-up, **automatically initiate the /sedd.clarify flow** to create a new migration:
 
-```markdown
-# New tasks added to tasks.md
+#### 8.1 If recommendation is `needs-followup` or `needs-revision`:
 
-- [ ] T001-NEW-001 [Follow-up] Implement session persistence for theme
-- [ ] T001-NEW-002 [Follow-up] Add session storage fallback
 ```
+⚠️ Gaps/issues encontrados. Criando nova migration automaticamente...
+
+📝 Iniciando /sedd.clarify com os gaps identificados:
+
+Gaps de expectativa:
+{{#each gaps}}
+- {{description}} (severity: {{severity}})
+{{/each}}
+
+Quality issues a resolver:
+{{#each qualityCriticals}}
+- [CRITICAL] {{file}}:{{line}} - {{description}}
+{{/each}}
+{{#each qualityWarnings}}
+- [WARNING] {{file}}:{{line}} - {{description}}
+{{/each}}
+```
+
+#### 8.2 Execute /sedd.clarify Flow Automatically:
+
+1. **Create new migration folder** (next ID, e.g., 002)
+2. **Pre-populate clarify.md** with:
+   - Gaps found in validation as context
+   - Quality issues as technical debt items
+   - Original expectation items that weren't covered
+3. **Pre-populate DEVE/NAO DEVE** from gaps:
+   - Each gap → DEVE item
+   - Each quality critical → DEVE fix
+4. **Generate tasks.md** directly from gaps:
+   - Each gap → follow-up task
+   - Each critical quality issue → fix task
+   - Each warning cluster → improvement task
+5. **Generate acceptance.md** from gap criteria
+6. **Update _meta.json** with new migration
+
+#### 8.3 Present Results:
+
+```
+✅ Nova migration {NEW_ID} criada automaticamente a partir dos gaps:
+
+📋 Tasks geradas:
+- [ ] T{NEW_ID}-001 [Follow-up] {gap_1_description}
+- [ ] T{NEW_ID}-002 [Follow-up] {gap_2_description}
+- [ ] T{NEW_ID}-003 [Quality] {critical_issue_fix}
+
+Deseja executar /sedd.implement agora? [Y/n]
+```
+
+#### 8.4 If recommendation is `complete`:
+
+No migration needed. Proceed to Step 9.
 
 ### Step 9: Display Summary
 
@@ -583,13 +661,14 @@ When recommendation is `"complete"` (100% coverage, 0 gaps, 0 violations):
 
 ## Rules
 
+- **NUNCA fazer commit nem push** — o usuário controla quando commitar
 - SEMPRE comparar contra expectativa original
 - SEMPRE mostrar git diff
 - SEMPRE executar code quality review via sub-agents em PARALELO
 - NUNCA marcar como completo se há violações críticas OU quality issues críticos
 - Quality score D/F em qualquer dimensão → `needs-revision`
 - Mais de 5 quality warnings → `needs-followup`
-- Criar tasks automáticas só com confirmação do usuário
+- Quando há gaps → AUTOMATICAMENTE rodar fluxo de /sedd.clarify para criar nova migration
 - Manter histórico de validações
 - Sub-agents de qualidade são lançados TODOS em paralelo (single message)
 
@@ -611,15 +690,7 @@ sedd validate --full-diff
 
 ## Integration with /sedd.clarify
 
-After `/sedd.validate` finds gaps:
-
-```
-Gaps encontrados. Deseja:
-
-1. /sedd.clarify - Criar nova migration para os gaps
-2. Adicionar tasks na migration atual
-3. Ignorar gaps (marcar como known limitations)
-```
+After `/sedd.validate` finds gaps, it **automatically** creates a new migration via /sedd.clarify flow with the gaps pre-populated as tasks. The user does NOT need to manually run /sedd.clarify — validate handles the full cycle: review → identify gaps → create migration → generate tasks.
 
 ## Suggested at End of /sedd.implement
 

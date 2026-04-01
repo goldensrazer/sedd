@@ -79,14 +79,19 @@
       },
       "additionalProperties": false
     },
-    "commit": {
+    "git": {
       "type": "object",
-      "description": "Git commit configuration",
+      "description": "Git behavior configuration. SEDD never auto-commits or auto-pushes by default.",
       "properties": {
-        "askBeforeCommit": {
+        "autoCommit": {
           "type": "boolean",
-          "default": true,
-          "description": "Ask user confirmation before committing"
+          "default": false,
+          "description": "If true, SEDD may suggest commits. Default false — user controls all commits."
+        },
+        "autoPush": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, SEDD may suggest pushes. Default false — user controls all pushes."
         },
         "messagePattern": {
           "type": "string",

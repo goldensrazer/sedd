@@ -34,7 +34,7 @@ Default `sedd.config.json`:
   "specsDir": ".sedd",
   "branchPattern": "{{id}}-{{name}}",
   "autoSplit": { "enabled": true, "maxLines": 400 },
-  "commit": { "askBeforeCommit": true }
+  "git": { "autoCommit": false, "autoPush": false }
 }
 ```
 
@@ -160,6 +160,98 @@ After all 3 agents complete, **synthesize their reports** into the spec:
 
 Document ALL findings in spec.md under `## Architecture Analysis` section.
 
+### Step 3.5: Generate Architecture Contract (MANDATORY - IMMUTABLE)
+
+After consolidating agent findings, extract and formalize the **Architecture Contract** — binding decisions about WHERE and HOW code must be created. This contract is IMMUTABLE throughout the feature lifecycle and MUST be respected by `/sedd.clarify`, `/sedd.implement`, and `/sedd.validate`.
+
+**The contract captures:**
+
+1. **Tech Stack Bindings** — Which tools/libs are used for what purpose
+2. **Pattern Bindings** — Which patterns are used for which layer
+3. **Location Bindings** — WHERE specific types of code must live
+4. **Contract Bindings** — Shared schemas/types between frontend and backend
+
+**Present to user for confirmation:**
+
+```
+📜 CONTRATO DE ARQUITETURA (imutável para esta feature)
+
+━━━ Tech Stack ━━━
+| Camada        | Tecnologia              | Exemplo no Código         |
+|---------------|-------------------------|---------------------------|
+| State Mgmt    | TanStack Query + hooks  | src/hooks/useXxx.ts       |
+| Forms         | React Hook Form + Zod   | src/forms/xxxForm.ts      |
+| Validation    | Zod (shared schemas)    | packages/schemas/xxx.ts   |
+| API Client    | tRPC / fetch wrapper    | src/api/xxx.ts            |
+| DB ORM        | Prisma / Drizzle        | prisma/schema.prisma      |
+| Testing       | Vitest + Testing Library| __tests__/xxx.test.ts     |
+
+━━━ Pattern Bindings ━━━
+| Padrão          | Onde Usar                    | Referência             |
+|-----------------|------------------------------|------------------------|
+| Repository      | Data access layer            | src/repositories/*.ts  |
+| Custom Hooks    | State + side effects         | src/hooks/use*.ts      |
+| Zod Schemas     | Validation (FE + BE shared)  | packages/schemas/*.ts  |
+| Server Actions  | Mutations                    | src/actions/*.ts       |
+
+━━━ Location Bindings ━━━
+| Tipo de Código   | DEVE ficar em                | NUNCA criar em          |
+|------------------|------------------------------|-------------------------|
+| Hooks            | src/hooks/                   | dentro de components/   |
+| Schemas          | packages/schemas/            | duplicar em FE e BE     |
+| Components       | src/components/{feature}/    | src/pages/              |
+| API Routes       | src/app/api/{feature}/       | src/services/           |
+
+━━━ Contract Bindings (Shared FE ↔ BE) ━━━
+| Contrato         | Localização                  | Usado por               |
+|------------------|------------------------------|-------------------------|
+| Entity schemas   | packages/schemas/entities/   | FE forms + BE validation|
+| API types        | packages/schemas/api/        | FE client + BE handlers |
+| Enums/constants  | packages/schemas/enums/      | FE + BE                 |
+
+Quer ajustar algo neste contrato? [Y/n/editar]
+```
+
+**Rules for the Contract:**
+- MUST be derived from what the sub-agents ACTUALLY found in the codebase
+- If the codebase already uses TanStack Query → contract says "use TanStack Query"
+- If schemas are in `packages/schemas/` → contract says "always put schemas there"
+- If there's a shared contract package → contract says "FE and BE use the same schemas"
+- User MUST confirm before proceeding
+- Contract is saved in `spec.md` under `## Architecture Contract` AND in `_meta.json`
+
+Save the confirmed contract in:
+- `spec.md` under `## Architecture Contract` section (after Architecture Analysis)
+- `_meta.json` in `architectureContract` field
+
+```json
+{
+  "architectureContract": {
+    "confirmedAt": "2026-01-11T10:00:00Z",
+    "techStack": {
+      "stateManagement": { "tech": "TanStack Query", "location": "src/hooks/" },
+      "forms": { "tech": "React Hook Form + Zod", "location": "src/forms/" },
+      "validation": { "tech": "Zod", "location": "packages/schemas/" },
+      "apiClient": { "tech": "tRPC", "location": "src/api/" },
+      "orm": { "tech": "Prisma", "location": "prisma/" },
+      "testing": { "tech": "Vitest", "location": "__tests__/" }
+    },
+    "patternBindings": [
+      { "pattern": "Custom Hooks", "usage": "State + side effects", "location": "src/hooks/use*.ts" },
+      { "pattern": "Zod Schemas", "usage": "Shared validation", "location": "packages/schemas/" }
+    ],
+    "locationBindings": [
+      { "type": "hooks", "mustBeIn": "src/hooks/", "neverIn": "src/components/" },
+      { "type": "schemas", "mustBeIn": "packages/schemas/", "neverIn": "duplicated per layer" }
+    ],
+    "sharedContracts": [
+      { "name": "Entity schemas", "location": "packages/schemas/entities/", "usedBy": ["frontend", "backend"] },
+      { "name": "API types", "location": "packages/schemas/api/", "usedBy": ["frontend", "backend"] }
+    ]
+  }
+}
+```
+
 ### Step 4: Create Feature Structure
 
 ```
@@ -235,14 +327,7 @@ Save to `ui-mockups/{{component}}.md`
 - Generated TypeScript interfaces
 ```
 
-### Step 10: Ask About Commit
-
-```
-Do you want to commit?
-Message: "feat(024): create spec for dark-mode-toggle"
-```
-
-### Step 11: Offer Next Step
+### Step 10: Offer Next Step
 
 ```
 Specification created! Next step:
@@ -261,8 +346,12 @@ Would you like to proceed with clarification?
 
 ## Rules
 
+- **NUNCA fazer commit nem push** — o usuário controla quando commitar
 - NEVER create spec without deep architecture analysis via sub-agents
 - ALWAYS launch all 3 analysis agents in PARALLEL (single message)
+- ALWAYS generate Architecture Contract after agent consolidation
+- Architecture Contract MUST be confirmed by user before proceeding
+- Architecture Contract is IMMUTABLE — all subsequent skills MUST respect it
 - ALWAYS create interfaces.ts
 - ALWAYS create ASCII mockups for UI features
 - Mark unclear items as NEEDS_CLARIFICATION

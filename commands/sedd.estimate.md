@@ -187,6 +187,7 @@ Deseja prosseguir para /sedd.clarify? [Y/n]
 
 ## Rules
 
+- **NUNCA fazer commit nem push** — o usuário controla quando commitar
 - SEMPRE pedir path do arquivo para investigação
 - SEMPRE separar esforço humano vs AI
 - NUNCA estimar sem analisar código existente
